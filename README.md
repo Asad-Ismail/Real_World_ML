@@ -1,2 +1,2 @@
 # ML_From_Scratch
-ML algorithms from scratch
+Ml algorithms implementation from scratch using only numpy one algorithm at a time
