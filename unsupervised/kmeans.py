@@ -100,6 +100,81 @@ def get_elbow_k(X):
     plt.savefig('results/elbow.png')
 
 
+def pairwise_distances(X):
+    """
+    Calculate the pairwise distance matrix of a matrix X.
+    """
+    n = X.shape[0]
+    distance_matrix = np.zeros((n, n))
+    for i in range(n):
+        for j in range(i, n):
+            distance_matrix[i, j] = np.linalg.norm(X[i] - X[j])
+            distance_matrix[j, i] = distance_matrix[i, j]
+    return distance_matrix
+
+def silhouette_score(X, labels):
+    """
+    Calculate the silhouette score of a clustering given the data and the labels.
+    X: the data matrix, where each row is a data point and each column is a feature
+    labels: a vector of cluster assignments, where labels[i] is the cluster index assigned to the ith data point
+    The function returns the silhouette score as a float value between -1 and 1. 
+    A score of 1 indicates that the clustering is very good, with well-separated clusters, while a score of -1 
+    indicates that the clustering is very bad, with poorly separated clusters. A score of 0 indicates that the clusters are overlapping.
+    """
+    def pairwise_distances(X):
+        """
+        Calculate the pairwise distance matrix of a matrix X.
+        """
+        n = X.shape[0]
+        distance_matrix = np.zeros((n, n))
+        for i in range(n):
+            for j in range(i, n):
+                distance_matrix[i, j] = np.linalg.norm(X[i] - X[j])
+                distance_matrix[j, i] = distance_matrix[i, j]
+        return distance_matrix
+
+    n = X.shape[0]
+    distance_matrix = pairwise_distances(X)
+    s = np.zeros(n)
+    for i in range(n):
+        # Calculate the cohesion of the ith data point
+        cluster_indices = np.where(np.array(labels) == labels[i])[0]
+        print(f"Len of cluster index are {len(cluster_indices)}")
+        cohesion = np.sum(distance_matrix[i, cluster_indices]) / (len(cluster_indices) - 1)
+        exit()
+        
+        # Calculate the separation of the ith data point
+        separation = np.inf
+        for j in range(n):
+            if labels[j] != labels[i]:
+                other_cluster_indices = np.where(labels == labels[j])[0]
+                d = np.sum(distance_matrix[i, other_cluster_indices]) / len(other_cluster_indices)
+                separation = min(separation, d)
+        
+        # Calculate the silhouette coefficient of the ith data point
+        s[i] = (separation - cohesion) / max(separation, cohesion)
+    
+    # Calculate the average silhouette score of all data points
+    score = np.mean(s)
+    return score
+
+
+def run_silhoutte_method(X):
+    # Cluster the data
+    silh = []
+    maxk=11
+    for k in range(1, maxk):
+        kmeans = KMeans(n_clusters=k)
+        kmeans.fit(X)
+        y_pred = kmeans.predict(X)
+        y_pred=np.array(y_pred)
+        silh.append(silhouette_score(X,y_pred))
+    # Find the "elbow" point in the WCSS plot
+    print(f"Sil scores are {silh}")
+    optimal_k = silh.index(max(silh))+1
+    print(f"Optimal silohutee k is {optimal_k}")
+
+
 def run_k_means(X,numberclusters=4):
     # Cluster the data
     kmeans = KMeans(n_clusters=4)
@@ -125,3 +200,5 @@ if __name__=="__main__":
 
     ## check Elbow method to check wccs
     get_elbow_k(X)
+
+    run_silhoutte_method(X)
