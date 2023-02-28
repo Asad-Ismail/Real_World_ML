@@ -11,8 +11,8 @@ class KMeans:
         
         # Initialize centroids randomly
         for i in range(self.n_clusters):
-            self.centroids[i] = X[np.random.choice(X.shape[0], 1)][0]
-        
+            self.centroids[i] = X[np.random.choice(X.shape[0],1),:]
+
         # Iterate until convergence or max_iter
         for i in range(self.max_iter):
             self.classes = {}
@@ -46,16 +46,29 @@ class KMeans:
             y_pred.append(classification)
         return y_pred
 
+def get_Data():
+    # Generate some random data
+    # set random seed for reproducibility
+    np.random.seed(42)
+    # define number of data points for each cluster
+    n_points = 100
+    # generate random data for each cluster
+    cluster1 = np.random.randn(n_points, 2) + np.array([-2, 2])
+    cluster2 = np.random.randn(n_points, 2) + np.array([2, 2])
+    cluster3 = np.random.randn(n_points, 2) + np.array([2, -2])
+    cluster4 = np.random.randn(n_points, 2) + np.array([-2, -2])
+
+    # combine data into one array
+    data = np.vstack([cluster1, cluster2, cluster3, cluster4])
+    return data
 
 if __name__=="__main__":
-    ## Test on 2D dummy dataset
-    import matplotlib.pyplot as plt
 
     # Generate some random data
-    X = np.array([[1, 2], [1.5, 1.8], [5, 8], [8, 8], [1, 0.6], [9, 11]])
+    X = get_Data()
 
     # Cluster the data
-    kmeans = KMeans(n_clusters=2)
+    kmeans = KMeans(n_clusters=4)
     kmeans.fit(X)
     y_pred = kmeans.predict(X)
 
@@ -65,3 +78,4 @@ if __name__=="__main__":
         plt.scatter(X[i][0], X[i][1], color=colors[y_pred[i]])
     plt.scatter([kmeans.centroids[c][0] for c in kmeans.centroids], [kmeans.centroids[c][1] for c in kmeans.centroids], marker='x', color='black')
     plt.show()
+    plt.savefig('results/cluster.png')
