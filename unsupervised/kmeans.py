@@ -136,6 +136,7 @@ def silhouette_score(X, labels):
     n = X.shape[0]
     distance_matrix = pairwise_distances(X)
     s = np.zeros(n)
+    # To avoid zero division
     eps=1e-5
     for i in range(n):
         # Calculate the cohesion of the ith data point
@@ -149,10 +150,12 @@ def silhouette_score(X, labels):
                 other_cluster_indices = np.where(labels == labels[j])[0]
                 d = np.sum(distance_matrix[i, other_cluster_indices]) / (len(other_cluster_indices)+eps)
                 separation = min(separation, d)
-        
-        # Calculate the silhouette coefficient of the ith data point
-        s[i] = (separation - cohesion) / (max(separation, cohesion)+eps)
-    
+        #Edge case of one cluster in the dataset
+        if separation==np.inf:
+            s[i]=0
+        else:
+            # Calculate the silhouette coefficient of the ith data point
+            s[i] = (separation - cohesion) / (max(separation, cohesion)+eps)
     # Calculate the average silhouette score of all data points
     score = np.mean(s)
     return score
@@ -162,7 +165,7 @@ def run_silhoutte_method(X):
     # Cluster the data
     silh = []
     maxk=11
-    for k in range(2, maxk):
+    for k in range(1, maxk):
         kmeans = KMeans(n_clusters=k)
         kmeans.fit(X)
         y_pred = kmeans.predict(X)
