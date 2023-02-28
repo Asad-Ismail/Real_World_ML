@@ -40,8 +40,10 @@ class KMeans:
                     break
             if converged:
                 break
+        self.wccs=0
+        for k in self.classes.keys():
+            self.wccs+=np.sqrt(((self.classes[k]-self.centroids[k])**2).sum())
         
-        #wccs=
                 
     def predict(self, X):
         y_pred = []
@@ -89,3 +91,5 @@ if __name__=="__main__":
     plt.scatter([kmeans.centroids[c][0] for c in kmeans.centroids], [kmeans.centroids[c][1] for c in kmeans.centroids], marker='x', color='black')
     #plt.show()
     plt.savefig('results/cluster.png')
+
+    ## check Elbow method to check wccs
