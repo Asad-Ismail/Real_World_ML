@@ -10,8 +10,10 @@ class KMeans:
         self.centroids = {}
         
         # Initialize centroids randomly
+        centroids = X[np.random.choice(X.shape[0], self.n_clusters, replace=False)]
+
         for i in range(self.n_clusters):
-            self.centroids[i] = X[np.random.choice(X.shape[0],1),:]
+            self.centroids[i] = centroids[i]
 
         # Iterate until convergence or max_iter
         for i in range(self.max_iter):
@@ -35,8 +37,11 @@ class KMeans:
             for c in self.centroids:
                 if not np.array_equal(self.centroids[c], prev_centroids[c]):
                     converged = False
+                    break
             if converged:
                 break
+        
+        #wccs=
                 
     def predict(self, X):
         y_pred = []
@@ -62,6 +67,11 @@ def get_Data():
     data = np.vstack([cluster1, cluster2, cluster3, cluster4])
     return data
 
+def get_scipy_data():
+    from sklearn.datasets import make_blobs
+    X, y = make_blobs(n_samples=1000, centers=8, n_features=2, random_state=42)
+    return X
+
 if __name__=="__main__":
 
     # Generate some random data
@@ -77,5 +87,5 @@ if __name__=="__main__":
     for i in range(len(X)):
         plt.scatter(X[i][0], X[i][1], color=colors[y_pred[i]])
     plt.scatter([kmeans.centroids[c][0] for c in kmeans.centroids], [kmeans.centroids[c][1] for c in kmeans.centroids], marker='x', color='black')
-    plt.show()
+    #plt.show()
     plt.savefig('results/cluster.png')
