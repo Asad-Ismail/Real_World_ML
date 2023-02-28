@@ -74,11 +74,33 @@ def get_scipy_data():
     X, y = make_blobs(n_samples=1000, centers=8, n_features=2, random_state=42)
     return X
 
-if __name__=="__main__":
+def get_elbow_k(X):
+    # Calculate the within-cluster sum of squares (WCSS) for different values of K
+    wcss = []
+    maxk=10
+    for k in range(1, maxk):
+        kmeans = KMeans(n_clusters=k)
+        kmeans.fit(X)
+        wcss.append(kmeans.wccs)
+    # Find the "elbow" point in the WCSS plot
+    distances = []
+    for i in range(1, len(wcss)):
+        distance = wcss[i-1] - wcss[i]
+        distances.append(distance)
+    elbow_point = np.argmax(distances) + 1
+    optimal_k = elbow_point + 1
+    print(f"Optimal K are {optimal_k}")
+    plt.figure()
+    plt.plot(range(1, maxk), wcss)
+    plt.plot(optimal_k, wcss[optimal_k-1], marker='o', markersize=10, color="red")
+    plt.title('Elbow Method')
+    plt.xlabel('Number of clusters (K)')
+    plt.ylabel('WCSS')
+    #plt.show()
+    plt.savefig('results/elbow.png')
 
-    # Generate some random data
-    X = get_Data()
 
+def run_k_means(X,numberclusters=4):
     # Cluster the data
     kmeans = KMeans(n_clusters=4)
     kmeans.fit(X)
@@ -92,4 +114,14 @@ if __name__=="__main__":
     #plt.show()
     plt.savefig('results/cluster.png')
 
+
+if __name__=="__main__":
+
+    # Generate some random data
+    X = get_Data()
+
+    # Run basic K means
+    run_k_means(X,numberclusters=4)
+
     ## check Elbow method to check wccs
+    get_elbow_k(X)
