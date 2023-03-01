@@ -15,7 +15,7 @@ Welcome to MLfromScratch, a repository of Python implementations of popular mach
 To use MLfromScratch, simply clone the repository and install the necessary dependencies:
 
 ```
-git clone https://github.com/your_username/MLfromScratch.git
+git clone https://github.com/Asad-Ismail/ML_From_Scratch.git
 cd MLfromScratch
 pip install -r requirements.txt
 ```
