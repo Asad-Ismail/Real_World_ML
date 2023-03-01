@@ -63,27 +63,18 @@ def plot_decision_boundary(model, X, y):
     plt.savefig('results/svm.png')
 
   
+if __name__=="__main__":
 
-X,Y=get_data()
-Y=np.where(Y==0,-1,1)
-print(f"Y min and max are {Y.min()},{Y.max()}")
-plt.scatter(X[:, 0], X[:, 1], c=Y)
-plt.savefig('results/data.png')
-#w,b=svm(X,Y)
-# Train an SVM on the dataset
-#from sklearn.svm import SVC
-#svm = SVC(kernel='linear', C=1.0)
-svm=SVM()
-svm.fit(X, Y)
-# Extract the learned weights and bias
-#w = svm.w
-#b = svm.b
-#print(w)
-#print(b)
-plot_decision_boundary(svm, X, Y)
-
-y_pred = svm.predict(X)
-accuracy = np.sum(y_pred == Y) / len(Y)
-print(f"Accuracy: {accuracy}")
+    X,Y=get_data()
+    Y=np.where(Y==0,-1,1)
+    print(f"Y min and max are {Y.min()},{Y.max()}")
+    plt.scatter(X[:, 0], X[:, 1], c=Y)
+    plt.savefig('results/data.png')
+    svm=SVM()
+    svm.fit(X, Y)
+    plot_decision_boundary(svm, X, Y)
+    y_pred = svm.predict(X)
+    accuracy = np.sum(y_pred == Y) / len(Y)
+    print(f"Accuracy: {accuracy}")
 
 
