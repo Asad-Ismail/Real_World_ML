@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib.pyplot as plt
+from utils import plot_decision_boundary
 
 
 def get_data():
@@ -12,7 +14,7 @@ class NaiveBayes:
     def __init__(self):
         pass
 
-    @classmethod
+    @staticmethod
     def mean_var(X, y):
         """
         Calculate the mean and variance of each feature for each class.
@@ -53,9 +55,9 @@ class NaiveBayes:
             prior[i] = np.sum(y == i) / n_samples
         return prior
     
-    def train(X,y):
-        self.prior=prior_prob(y)
-        self.mean,self.var=self.mean_var(X)
+    def fit(self,X,y):
+        self.prior=self.prior_prob(y)
+        self.mean,self.var=self.mean_var(X,y)
 
     def predict(self,X):
         """
@@ -77,8 +79,21 @@ class NaiveBayes:
             # calculate the class conditional probability using Gaussian distribution
             likelihood[:, i] = np.prod(1 / np.sqrt(2 * np.pi * self.var[i, :]) * np.exp(-(X - self.mean[i, :])**2 / (2 * self.var[i, :])), axis=1)
         # calculate the posterior probability and predict the class with the highest probability
-        posterior = likelihood * prior
+        posterior = likelihood * self.prior
         preds = np.argmax(posterior,axis=1)
+        return preds
 
 
 
+if __name__=="__main__":
+    X,Y=get_data()
+    #Y=np.where(Y==0,-1,1)
+    print(f"Y min and max are {Y.min()},{Y.max()}")
+    plt.scatter(X[:, 0], X[:, 1], c=Y)
+    plt.savefig('results/data.png')
+    nb=NaiveBayes()
+    nb.fit(X, Y)
+    plot_decision_boundary(nb, X, Y,save_path="results/naivebayes.png")
+    y_pred = nb.predict(X)
+    accuracy = np.sum(y_pred == Y) / len(Y)
+    print(f"Accuracy: {accuracy}")
