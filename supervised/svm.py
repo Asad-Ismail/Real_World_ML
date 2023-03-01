@@ -32,16 +32,16 @@ class SVM:
         for epoch in range(num_epochs):
             for i in range(n_samples):
                 # Compute the prediction and loss
-                y_pred = np.dot(X_train[i], w) + b
-                loss = hinge_loss(y_train[i], y_pred)
+                y_pred = np.dot(X[i], self.w) + self.b
+                loss = hinge_loss(y[i], y_pred)
 
                 # Compute the gradient
                 if loss == 0:
-                    dw = 2 * self.lambda_param * w
+                    dw = 2 * self.lambda_param * self.w
                     db = 0
                 else:
-                    dw = 2 * self.lambda_param * self.w - y_train[i] * X_train[i]
-                    db = -y_train[i]
+                    dw = 2 * self.lambda_param * self.w - y[i] * X[i]
+                    db = -y[i]
 
                 # Update weights and bias
                 #w -= lr * dw
@@ -73,9 +73,9 @@ plt.scatter(X[:, 0], X[:, 1], c=Y)
 plt.savefig('results/data.png')
 #w,b=svm(X,Y)
 # Train an SVM on the dataset
-from sklearn.svm import SVC
-svm = SVC(kernel='linear', C=1.0)
-#svm=SVM()
+#from sklearn.svm import SVC
+#svm = SVC(kernel='linear', C=1.0)
+svm=SVM()
 svm.fit(X, Y)
 # Extract the learned weights and bias
 w = svm.w
