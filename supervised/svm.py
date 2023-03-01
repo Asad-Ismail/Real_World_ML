@@ -14,7 +14,7 @@ def hinge_loss(y_true, y_pred):
 
 
 class SVM:
-    def __init__(self, learning_rate=0.001, lambda_param=0.01, num_iterations=100000):
+    def __init__(self, learning_rate=0.001, lambda_param=1, num_iterations=100000):
         self.learning_rate = learning_rate
         self.lambda_param = lambda_param
         self.num_iterations = num_iterations
@@ -43,10 +43,6 @@ class SVM:
                     dw = 2 * self.lambda_param * self.w - y[i] * X[i]
                     db = -y[i]
 
-                # Update weights and bias
-                #w -= lr * dw
-                #b -= lr * db
-
                 self.w -= self.learning_rate * dw
                 self.b -= self.learning_rate * db
     
@@ -69,6 +65,8 @@ def plot_decision_boundary(model, X, y):
   
 
 X,Y=get_data()
+Y=np.where(Y==0,-1,1)
+print(f"Y min and max are {Y.min()},{Y.max()}")
 plt.scatter(X[:, 0], X[:, 1], c=Y)
 plt.savefig('results/data.png')
 #w,b=svm(X,Y)
@@ -78,9 +76,14 @@ plt.savefig('results/data.png')
 svm=SVM()
 svm.fit(X, Y)
 # Extract the learned weights and bias
-w = svm.w
-b = svm.b
-print(w)
-print(b)
+#w = svm.w
+#b = svm.b
+#print(w)
+#print(b)
 plot_decision_boundary(svm, X, Y)
+
+y_pred = svm.predict(X)
+accuracy = np.sum(y_pred == Y) / len(Y)
+print(f"Accuracy: {accuracy}")
+
 
