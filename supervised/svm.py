@@ -9,6 +9,10 @@ def get_data():
     return X,Y
 
 
+def hinge_loss(y_true, y_pred):
+    return np.maximum(0, 1 - y_true * y_pred)
+
+
 class SVM:
     def __init__(self, learning_rate=0.001, lambda_param=0.01, num_iterations=100000):
         self.learning_rate = learning_rate
@@ -17,34 +21,37 @@ class SVM:
         self.w = None
         self.b = None
     
-    def fit(self, X, y):
+    def fit(self, X, y,num_epochs=100):
         n_samples, n_features = X.shape
         
         # Initialize parameters
         self.w = np.zeros(n_features)
         self.b = 0
-        
-        # Gradient descent optimization
-        for i in range(self.num_iterations):
-            # Randomly select a sample
-            random_index = np.random.randint(n_samples)
-            sample_x, sample_y = X[random_index], y[random_index]
-            
-            # Calculate hinge loss and gradient
-            condition = sample_y * (np.dot(sample_x, self.w) - self.b) >= 1
-            if condition:
-                dw = 2 * self.lambda_param * self.w
-                db = 0
-            else:
-                dw = 2 * self.lambda_param * self.w - np.dot(sample_x, sample_y)
-                db = -sample_y
-            
-            # Update parameters
-            self.w -= self.learning_rate * dw
-            self.b -= self.learning_rate * db
+
+        # Training loop
+        for epoch in range(num_epochs):
+            for i in range(n_samples):
+                # Compute the prediction and loss
+                y_pred = np.dot(X_train[i], w) + b
+                loss = hinge_loss(y_train[i], y_pred)
+
+                # Compute the gradient
+                if loss == 0:
+                    dw = 2 * self.lambda_param * w
+                    db = 0
+                else:
+                    dw = 2 * self.lambda_param * self.w - y_train[i] * X_train[i]
+                    db = -y_train[i]
+
+                # Update weights and bias
+                #w -= lr * dw
+                #b -= lr * db
+
+                self.w -= self.learning_rate * dw
+                self.b -= self.learning_rate * db
     
     def predict(self, X):
-        y_pred = np.dot(X, self.w) - self.b
+        y_pred = np.dot(X, self.w) + self.b
         return np.sign(y_pred)
 
 
