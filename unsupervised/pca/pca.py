@@ -42,7 +42,7 @@ class PCA:
         
         # select the top n components
         top_n_eigenvectors = sorted_eigenvectors[:,:self.components]
-        print(f"Top N Eigen vector is {top_n_eigenvectors.shape}")
+        print(f"Top N Eigen vector shape is {top_n_eigenvectors.shape}")
         self.top_n_eigenvectors=top_n_eigenvectors
 
     def pred(self,X):
@@ -78,13 +78,12 @@ if __name__ =="__main__":
     #pct=50
     #n_components=int((pct/100)*(img_dim))
     n_components=361
-    print(f"Image dimension is {img_dim}, {n_components}")
+    print(f"Image dimension is {img_dim}")
     model=PCA(n_components)
     model.fit(train_imgs)
     transformed=model.pred(test_imgs)
-    print(f"tranformed shape is {transformed.shape}")
+    print(f"Tranformed shape is {transformed.shape}")
     reconstructed=model.pca_inverse_transform(transformed)
-    print(f"reconstructed shape is {reconstructed.shape}")
     out_dim=int(np.sqrt(img_dim))
     reconstructed=reconstructed.reshape(-1,out_dim,out_dim)
     plt.savefig("results/recons.png")
