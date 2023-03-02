@@ -1,36 +1,39 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
+# only to downalod dataset
+#pip install mnist
 
 def get_data():
-    from sklearn.datasets import load_sample_images
-    dataset = load_sample_images()
-    images = dataset.images
-    # Reshape images to 2D arrays
-    n_samples = len(images)
-    data = images.reshape((n_samples, -1))
-    return data
+    # only to get sample dataset
+    import mnist   
+    train_imgs=mnist.train_images()
+    test_imgs= mnist.test_images()
+    print(f"Train and test shape are {train_imgs.shape},{test_imgs.shape}")
+    return train_imgs,test_imgs
 
 class PCA:
-    def __init__(self,compenents):
-        self.compenents=components
+    def __init__(self,components):
+        self.components=components
 
-    @staticmethod
-    def standardize(X):
-        X = (X - self.mean) / self.std
+    def standardize(self,X,eps=1e-5):
+        X = (X - self.mean) / (self.std+eps)
         return X
 
 
-    def train(X):
+    def fit(self,X):
         # calculate mean and variance
         self.mean=np.mean(X, axis=0)
         self.std=np.std(X, axis=0)
+        print(f"Mean and std of data is {X.shape},{self.mean.shape}, {self.std.shape}")
         # standardize the data
-        X = standardize(X)
+        X = self.standardize(X)
         # compute the covariance matrix
         cov_matrix = np.cov(X.T)
         
         # compute the eigenvalues and eigenvectors of the covariance matrix
         eigenvalues, eigenvectors = np.linalg.eig(cov_matrix)
+        print(f"Eigen values and vectors shape is {eigenvalues.shape}, {eigenvectors.shape}")
         
         # sort the eigenvalues and eigenvectors in descending order
         sorted_indices = np.argsort(eigenvalues)[::-1]
@@ -38,15 +41,15 @@ class PCA:
         sorted_eigenvectors = eigenvectors[:,sorted_indices]
         
         # select the top n components
-        top_n_eigenvectors = sorted_eigenvectors[:,:self.compenents]
-        
+        top_n_eigenvectors = sorted_eigenvectors[:,:self.components]
+        print(f"Top N Eigen vector is {top_n_eigenvectors.shape}")
         self.top_n_eigenvectors=top_n_eigenvectors
 
-    def pred(X):
+    def pred(self,X):
         # Standardize data
-        X=standardize(X)
+        X=self.standardize(X)
         # transform the data into the new coordinate system
-        transformed_data = np.dot(X, slef.top_n_eigenvectors)
+        transformed_data = np.dot(X, self.top_n_eigenvectors)
         return transformed_data
 
 
@@ -54,7 +57,7 @@ class PCA:
         """Perform PCA inverse transform on transformed data."""
         
         # Multiply transformed data by transpose of PCA component matrix
-        inverse_transformed_data = np.dot(transformed_data, self.slef.top_n_eigenvectors.T)
+        inverse_transformed_data = np.dot(transformed_data, self.top_n_eigenvectors.T)
         
         # Add mean vector to shift back to original scale
         original_data = inverse_transformed_data + self.mean
@@ -63,6 +66,28 @@ class PCA:
 
 
 if __name__ =="__main__":
-    images=get_data()
+    train_imgs,test_imgs=get_data()
+    plt.imshow(train_imgs[np.random.randint(0,len(train_imgs))])
+    plt.savefig("results/inp.png")
+    img_dim=np.prod(np.array(train_imgs.shape[1:]))
+    #Flatten train and test images
+    train_imgs=train_imgs.reshape(-1,img_dim)
+    test_imgs=train_imgs.reshape(-1,img_dim) 
+    print(f"Images min and max are {train_imgs.min()}, {train_imgs.max()}")
+    # keep 50 pct of componeents of image
+    #pct=50
+    #n_components=int((pct/100)*(img_dim))
+    n_components=361
+    print(f"Image dimension is {img_dim}, {n_components}")
+    model=PCA(n_components)
+    model.fit(train_imgs)
+    transformed=model.pred(test_imgs)
+    print(f"tranformed shape is {transformed.shape}")
+    reconstructed=model.pca_inverse_transform(transformed)
+    print(f"reconstructed shape is {reconstructed.shape}")
+    out_dim=int(np.sqrt(img_dim))
+    reconstructed=reconstructed.reshape(-1,out_dim,out_dim)
+    plt.savefig("results/recons.png")
+
 
 
