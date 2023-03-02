@@ -78,6 +78,7 @@ if __name__ =="__main__":
     #pct=50
     #n_components=int((pct/100)*(img_dim))
     n_components=361
+    print(f"Reduction in Images dimensions are {img_dim/n_components}*100 %")
     print(f"Image dimension is {img_dim}")
     model=PCA(n_components)
     model.fit(train_imgs)
