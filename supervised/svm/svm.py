@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import os,sys
+sys.path.append("../utils")
 from utils import plot_decision_boundary
 
 def get_data():
