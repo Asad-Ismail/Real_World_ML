@@ -22,3 +22,16 @@ def pca(X, n_components):
     transformed_data = np.dot(X, top_n_eigenvectors)
     
     return transformed_data
+
+
+
+def pca_inverse_transform(transformed_data, pca_components, mean_vector):
+    """Perform PCA inverse transform on transformed data."""
+    
+    # Multiply transformed data by transpose of PCA component matrix
+    inverse_transformed_data = np.dot(transformed_data, pca_components.T)
+    
+    # Add mean vector to shift back to original scale
+    original_data = inverse_transformed_data + mean_vector
+    
+    return original_data
