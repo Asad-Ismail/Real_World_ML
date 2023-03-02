@@ -1,6 +1,15 @@
 import numpy as np
 
 
+def get_data():
+    from sklearn.datasets import load_sample_images
+    dataset = load_sample_images()
+    images = dataset.images
+    # Reshape images to 2D arrays
+    n_samples = len(images)
+    data = images.reshape((n_samples, -1))
+    return data
+
 class PCA:
     def __init__(self,compenents):
         self.compenents=components
@@ -54,6 +63,6 @@ class PCA:
 
 
 if __name__ =="__main__":
-    
+    images=get_data()
 
 
