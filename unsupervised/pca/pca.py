@@ -17,7 +17,8 @@ class PCA:
         self.components=components
 
     def standardize(self,X,eps=1e-5):
-        X = (X - self.mean) / (self.std+eps)
+        X = (X - self.mean) 
+        #X = (X - self.mean) / (self.std+eps)
         return X
 
 
@@ -68,25 +69,27 @@ class PCA:
 if __name__ =="__main__":
     train_imgs,test_imgs=get_data()
     plt.imshow(train_imgs[np.random.randint(0,len(train_imgs))])
-    plt.savefig("results/inp.png")
     img_dim=np.prod(np.array(train_imgs.shape[1:]))
     #Flatten train and test images
     train_imgs=train_imgs.reshape(-1,img_dim)
     test_imgs=train_imgs.reshape(-1,img_dim) 
-    print(f"Images min and max are {train_imgs.min()}, {train_imgs.max()}")
     # keep 50 pct of componeents of image
     #pct=50
     #n_components=int((pct/100)*(img_dim))
     n_components=361
-    print(f"Reduction in Images dimensions are {img_dim/n_components}*100 %")
-    print(f"Image dimension is {img_dim}")
+    print(f"Reduction in Images dimensions are {(n_components/img_dim)*100} %")
     model=PCA(n_components)
     model.fit(train_imgs)
     transformed=model.pred(test_imgs)
-    print(f"Tranformed shape is {transformed.shape}")
     reconstructed=model.pca_inverse_transform(transformed)
     out_dim=int(np.sqrt(img_dim))
     reconstructed=reconstructed.reshape(-1,out_dim,out_dim)
+    testidx=np.random.randint(0,len(test_imgs))
+    print(f"Test index is {testidx}")
+    orgimg=test_imgs[testidx,...].reshape(out_dim,out_dim)
+    recons=reconstructed[testidx,...]
+    print(f"Test Images and Prediction shape is {test_imgs.shape}, {reconstructed.shape}")
+    plt.imshow(np.concatenate((orgimg,recons),axis=1))
     plt.savefig("results/recons.png")
 
 
