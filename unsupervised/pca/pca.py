@@ -73,9 +73,6 @@ if __name__ =="__main__":
     #Flatten train and test images
     train_imgs=train_imgs.reshape(-1,img_dim)
     test_imgs=train_imgs.reshape(-1,img_dim) 
-    # keep 50 pct of componeents of image
-    #pct=50
-    #n_components=int((pct/100)*(img_dim))
     n_components=361
     print(f"Reduction in Images dimensions are {(n_components/img_dim)*100} %")
     model=PCA(n_components)
