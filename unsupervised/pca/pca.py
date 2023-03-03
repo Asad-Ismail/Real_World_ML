@@ -74,7 +74,7 @@ if __name__ =="__main__":
     train_imgs=train_imgs.reshape(-1,img_dim)
     test_imgs=train_imgs.reshape(-1,img_dim) 
     n_components=361
-    print(f"Reduction in Images dimensions are {(n_components/img_dim)*100} %")
+    print(f"Number of parameters compared to original{(n_components/img_dim)*100} %")
     model=PCA(n_components)
     model.fit(train_imgs)
     transformed=model.pred(test_imgs)
