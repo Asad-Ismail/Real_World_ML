@@ -3,6 +3,7 @@ import torch.nn as nn
 import torchvision
 import numpy as np
 from torchvision import transforms
+import matplotlib.pyplot as plt
 
 # Define the transformation to apply to each image
 transform = transforms.Compose([transforms.ToTensor()]) 
@@ -55,7 +56,10 @@ if __name__=="__main__":
     
     testidx=np.random.randint(0,len(test_dataset))
     print(f"Test index is {testidx}")
-    print(test_dataset[testidx][0].shape)
+    orgimg=test_dataset[testidx][0].squeeze(0).detach().numpy()
+    recons=model(test_dataset[testidx][0].reshape(1,1,-1)).reshape(28,28).detach().numpy()
+    plt.imshow(np.concatenate((orgimg,recons),axis=1))
+    plt.savefig("results/recons.png")
 
 
     
