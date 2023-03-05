@@ -54,6 +54,16 @@ def perplexity(P):
     return 2 ** H
 
 '''
+In t-SNE, P is a joint probability distribution that measures the similarity between pairs of high-dimensional data points in the input space, while Q is a conditional probability distribution that measures the similarity between pairs of low-dimensional data points in the output space.
+
+The joint probability P_{i,j} represents the probability that points i and j are similar in the high-dimensional input space, while the conditional probability Q_{i,j} represents the probability that points i and j are similar in the low-dimensional output space, given the embedding Y of the data points.
+
+The goal of t-SNE is to find a low-dimensional embedding Y that minimizes the discrepancy between P and Q. 
+This is achieved by minimizing the Kullback-Leibler (KL) divergence between P and Q, 
+which measures the information lost when approximating P with Q. Since P is a joint probability distribution
+over all pairs of data points, and Q is a conditional probability distribution over pairs of low-dimensional data points,
+it is natural to call P the joint probability and Q the conditional probability in the context of t-SNE.
+
 Loss is 
 KL(P || Q) = sum_i(sum_j(P_{i,j} * log(P_{i,j} / Q_{i,j})))
 Gradient is 
