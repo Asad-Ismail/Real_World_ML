@@ -1,5 +1,7 @@
 import numpy as np
 from scipy.spatial.distance import pdist, squareform
+import matplotlib.pyplot as plt
+import pickle
 
 
 def get_data():
@@ -112,7 +114,7 @@ def compute_gradient(Y, P, Q):
     return gradient
 
 
-def t_SNE(X, n_components=2, perplexity=30, n_iter=1000, learning_rate=500, momentum=0.8):
+def t_SNE(X, n_components=2, perplexity=30, n_iter=1, learning_rate=500, momentum=0.8):
     """
     Perform t-SNE on the high-dimensional dataset X.
     """
@@ -167,12 +169,16 @@ if __name__=="__main__":
     train_imgs,train_lbls,test_imgs,test_lbls=get_data()
     print(train_imgs.shape)
     #get first n 
-    train_imgs=train_imgs[:2000,...].reshape(-1,784)
-    train_lbls=train_lbls[:2000,...]
+    train_imgs=train_imgs[:200,...].reshape(-1,784)
+    train_lbls=train_lbls[:200,...]
     unique_values, unique_counts = np.unique(train_lbls, return_counts=True)
     for value, count in zip(unique_values, unique_counts):
         print(f"Label {value} has count: {count}")
-    t_SNE(train_imgs)
+    y=t_SNE(train_imgs)
+    np.save("results/tsne.np",y)
+    plt.scatter(y[:,0], y[:,1])
+    plt.savefig("results/clusters.png")
+
     
 
 
