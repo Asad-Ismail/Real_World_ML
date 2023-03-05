@@ -7,8 +7,10 @@ def get_data():
     import mnist   
     train_imgs=mnist.train_images()
     test_imgs= mnist.test_images()
+    train_lbls=mnist.train_labels()
+    test_lbls= mnist.test_labels()
     print(f"Train and test shape are {train_imgs.shape},{test_imgs.shape}")
-    return train_imgs,test_imgs
+    return train_imgs,train_lbls,test_imgs,test_lbls
 
 def pairwise_distances(X):
     """
@@ -51,6 +53,31 @@ def perplexity(P):
     H = -np.sum(P * H)
     return 2 ** H
 
+'''
+Loss is 
+KL(P || Q) = sum_i(sum_j(P_{i,j} * log(P_{i,j} / Q_{i,j})))
+Gradient is 
+KL(P || Q) = sum_i(sum_j(P_{i,j} * log(P_{i,j} / Q_{i,j})))
+
+Step By Step:
+Compute pairwise distances in the low-dimensional space:
+    distances_{i,j} = ||Y_i - Y_j||
+
+Compute the difference between joint and low-dimensional probabilities:
+    PQ_diff_{i,j} = P_{i,j} - Q_{i,j}
+
+Compute the sum of the difference multiplied by the Gaussian kernel:
+    summands_{i,k} = 0
+    for i in range(Y.shape[0]):
+        for j in range(Y.shape[0]):
+            if i != j:
+                summands_{i,k} += (PQ_diff_{i,j} * (Y_{i,k} - Y_{j,k})) / (1 + distances_{i,j} ** 2)
+
+Multiply by the perplexity and sum over all pairs:
+    summands_{i,k} = 4 * summands_{i,k} * perplexity(P)
+    gradient_k = sum_i(summands_{i,k})
+'''
+
 def compute_gradient(Y, P, Q):
     """
     Compute the gradient of the cost function.
@@ -68,13 +95,14 @@ def compute_gradient(Y, P, Q):
             if i != j:
                 summands[i, :] += (PQ_diff[i, j] * (Y[i, :] - Y[j, :])) / (1 + distances[i, j] ** 2)
     # Multiply by the perplexity and sum over all pairs
+    #summands = 4 * summands * perplexity(P)
     summands = 4 * summands * perplexity(P)
     gradient = np.sum(summands, axis=0)
 
     return gradient
 
 
-def t_SNE(X, n_components=2, perplexity=30, n_iter=1000, learning_rate=200, momentum=0.8):
+def t_SNE(X, n_components=2, perplexity=30, n_iter=1000, learning_rate=500, momentum=0.8):
     """
     Perform t-SNE on the high-dimensional dataset X.
     """
@@ -84,7 +112,9 @@ def t_SNE(X, n_components=2, perplexity=30, n_iter=1000, learning_rate=200, mome
     print(f"Pair wise distances shape is {distances.shape}")
 
     # Compute joint probabilities
+    print(f"Getting joint probability")
     P = compute_joint_probabilities(distances, perplexity)
+    print(f"Calculated joint probability")
 
     # Initialize low-dimensional embeddings randomly
     Y = np.random.randn(X.shape[0], n_components)
@@ -99,6 +129,7 @@ def t_SNE(X, n_components=2, perplexity=30, n_iter=1000, learning_rate=200, mome
 
         # Compute gradient of cost function
         gradient = compute_gradient(Y, P, Q)
+        print(gradient)
 
         # Update momentum
         if i == 0:
@@ -123,10 +154,11 @@ def t_SNE(X, n_components=2, perplexity=30, n_iter=1000, learning_rate=200, mome
     return Y
 
 if __name__=="__main__":
-    train_imgs,test_imgs=get_data()
+    train_imgs,train_lbls,test_imgs,test_lbls=get_data()
     print(train_imgs.shape)
     #get first n 
-    train_imgs=train_imgs[:200,...].reshape(-1,784)
+    train_imgs=train_imgs[:2000,...].reshape(-1,784)
+    train_lbls=train_lbls
     t_SNE(train_imgs)
     
 
