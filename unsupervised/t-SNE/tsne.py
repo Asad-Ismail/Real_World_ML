@@ -79,7 +79,9 @@ def t_SNE(X, n_components=2, perplexity=30, n_iter=1000, learning_rate=200, mome
     Perform t-SNE on the high-dimensional dataset X.
     """
     # Compute pairwise distances between all points in X
+    print(f"Getting Pairwise distances!!")
     distances = pairwise_distances(X)
+    print(f"Pair wise distances shape is {distances.shape}")
 
     # Compute joint probabilities
     P = compute_joint_probabilities(distances, perplexity)
@@ -122,7 +124,9 @@ def t_SNE(X, n_components=2, perplexity=30, n_iter=1000, learning_rate=200, mome
 
 if __name__=="__main__":
     train_imgs,test_imgs=get_data()
-    train_imgs=train_imgs.reshape(-1,784)
+    print(train_imgs.shape)
+    #get first n 
+    train_imgs=train_imgs[:200,...].reshape(-1,784)
     t_SNE(train_imgs)
     
 
