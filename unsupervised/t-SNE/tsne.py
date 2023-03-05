@@ -168,7 +168,10 @@ if __name__=="__main__":
     print(train_imgs.shape)
     #get first n 
     train_imgs=train_imgs[:2000,...].reshape(-1,784)
-    train_lbls=train_lbls
+    train_lbls=train_lbls[:2000,...]
+    unique_values, unique_counts = np.unique(train_lbls, return_counts=True)
+    for value, count in zip(unique_values, unique_counts):
+        print(f"Label {value} has count: {count}")
     t_SNE(train_imgs)
     
 
