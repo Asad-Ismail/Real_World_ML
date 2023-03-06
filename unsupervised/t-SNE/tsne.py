@@ -14,6 +14,15 @@ def get_data():
     print(f"Train and test shape are {train_imgs.shape},{test_imgs.shape}")
     return train_imgs,train_lbls,test_imgs,test_lbls
 
+
+def normalize_data(data):
+    mean=np.mean(data,axis=0)
+    std=np.std(data,axis=0)
+    print(f"data shape is {data.shape}")
+    print(f"Mean and std shape is {mean.shape}, {std.shape}")
+    data=(data-mean)/(std+1e-5)
+    return data
+
 def pairwise_distances(X):
     """
     Compute pairwise distances between all points in X.
@@ -114,7 +123,7 @@ def compute_gradient(Y, P, Q):
     return gradient
 
 
-def t_SNE(X, n_components=2, perplexity=30, n_iter=2000, learning_rate=500, momentum=0.8):
+def t_SNE(X, n_components=2, perplexity=30, n_iter=2000, learning_rate=100, momentum=0.8):
     """
     Perform t-SNE on the high-dimensional dataset X.
     """
@@ -141,7 +150,7 @@ def t_SNE(X, n_components=2, perplexity=30, n_iter=2000, learning_rate=500, mome
 
         # Compute gradient of cost function
         gradient = compute_gradient(Y, P, Q)
-        print(gradient)
+        #print(gradient)
 
         # Update momentum
         if i == 0:
@@ -156,7 +165,7 @@ def t_SNE(X, n_components=2, perplexity=30, n_iter=2000, learning_rate=500, mome
         Y = Y - np.mean(Y, axis=0)
 
         # Print progress
-        if (i + 1) % 50 == 0:
+        if (i + 1) % 10 == 0:
             cost = np.sum(P * np.log(P / Q))
             print(f"Iteration {i + 1}/{n_iter}: cost={cost}")
 
