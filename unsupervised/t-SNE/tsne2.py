@@ -1,5 +1,6 @@
 import numpy as np
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 EPSILON = 1e-12
 
@@ -228,5 +229,5 @@ if __name__=="__main__":
         print(f"Label {value} has count: {count}")
     y=tsne(train_imgs, 2, 30, 1000, lr=100, momentum_fn=momentum_func)
     np.save("results/tsne.np",y)
-    plt.scatter(y[:,0], y[:,1])
+    plt.scatter(y[:,0], y[:,1],c=train_lbls)
     plt.savefig("results/clusters.png")
