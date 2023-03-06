@@ -124,7 +124,7 @@ def compute_gradient(Y, P, Q):
     return gradient
 
 
-def t_SNE(X, n_components=2, perplexity=30, n_iter=2000, learning_rate=100, momentum=0.8):
+def t_SNE(X, n_components=2, perplexity=100, n_iter=2000, learning_rate=1000, momentum=0.8):
     """
     Perform t-SNE on the high-dimensional dataset X.
     """
@@ -149,9 +149,14 @@ def t_SNE(X, n_components=2, perplexity=30, n_iter=2000, learning_rate=100, mome
         # Compute low-dimensional similarities
         Q = gaussian_similarity_matrix(pairwise_distances(Y), sigma=1.0)
 
+        # Print progress
+        if i==0 or (i + 1) % 10 == 0:
+            cost = np.sum(P * np.log(P / Q))
+            print(f"Iteration {i + 1}/{n_iter}: cost={cost}")
+
         # Compute gradient of cost function
         gradient = compute_gradient(Y, P, Q)
-        #print(gradient)
+        print(gradient)
 
         # Update momentum
         if i == 0:
@@ -164,11 +169,6 @@ def t_SNE(X, n_components=2, perplexity=30, n_iter=2000, learning_rate=100, mome
 
         # Normalize embeddings
         Y = Y - np.mean(Y, axis=0)
-
-        # Print progress
-        if (i + 1) % 10 == 0:
-            cost = np.sum(P * np.log(P / Q))
-            print(f"Iteration {i + 1}/{n_iter}: cost={cost}")
 
         # Save gradient for next iteration
         prev_gradient = gradient
