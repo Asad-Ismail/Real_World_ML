@@ -180,6 +180,9 @@ if __name__=="__main__":
     #get first n 
     train_imgs=train_imgs[:2000,...].reshape(-1,784)
     train_lbls=train_lbls[:2000,...]
+    print(f"Data min and max before normalization is {train_imgs.min()},{train_imgs.max()}")
+    train_imgs=normalize_data(train_imgs)
+    print(f"Data min and max after normalization is {train_imgs.min()},{train_imgs.max()}")
     unique_values, unique_counts = np.unique(train_lbls, return_counts=True)
     for value, count in zip(unique_values, unique_counts):
         print(f"Label {value} has count: {count}")
