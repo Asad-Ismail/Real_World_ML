@@ -11,16 +11,17 @@ def get_data():
     test_imgs= mnist.test_images()
     train_lbls=mnist.train_labels()
     test_lbls= mnist.test_labels()
-    print(f"Train and test shape are {train_imgs.shape},{test_imgs.shape}")
+    #print(f"Train and test shape are {train_imgs.shape},{test_imgs.shape}")
     return train_imgs,train_lbls,test_imgs,test_lbls
 
 
 def normalize_data(data):
     mean=np.mean(data,axis=0)
     std=np.std(data,axis=0)
-    print(f"data shape is {data.shape}")
-    print(f"Mean and std shape is {mean.shape}, {std.shape}")
-    data=(data-mean)/(std+1e-5)
+    #print(f"data shape is {data.shape}")
+    #print(f"Mean and std shape is {mean.shape}, {std.shape}")
+    data=(data-mean)/(std+1e-7)
+    #print(f"Mean and std of data after is {np.mean(data,axis=0)}, {np.std(data,axis=0)}")
     return data
 
 def pairwise_distances(X):
