@@ -216,18 +216,20 @@ def tsne(
     return Y
 
 if __name__=="__main__":
-    train_imgs,train_lbls,test_imgs,test_lbls=get_data()
-    print(train_imgs.shape)
+    #train_imgs,train_lbls,test_imgs,test_lbls=get_data()
+    #print(train_imgs.shape)
     #get first n 
-    train_imgs=train_imgs[:2000,...].reshape(-1,784)
-    train_lbls=train_lbls[:2000,...]
-    print(f"Data min and max before normalization is {train_imgs.min()},{train_imgs.max()}")
+    #train_imgs=train_imgs[:2000,...].reshape(-1,784)
+    #train_lbls=train_lbls[:2000,...]
+    #print(f"Data min and max before normalization is {train_imgs.min()},{train_imgs.max()}")
     ##train_imgs=normalize_data(train_imgs)
     #print(f"Data min and max after normalization is {train_imgs.min()},{train_imgs.max()}")
+    from sklearn.datasets import load_digits
+    train_imgs, train_lbls = load_digits(return_X_y=True)
     unique_values, unique_counts = np.unique(train_lbls, return_counts=True)
     for value, count in zip(unique_values, unique_counts):
         print(f"Label {value} has count: {count}")
-    y=tsne(train_imgs, 2, 30, 1000, lr=100, momentum_fn=momentum_func)
+    y=tsne(train_imgs, 2, 30, 1000, lr=100, momentum_fn=momentum_func,pbar=True,random_state=42)
     np.save("results/tsne.np",y)
     plt.scatter(y[:,0], y[:,1],c=train_lbls)
     plt.savefig("results/clusters.png")
