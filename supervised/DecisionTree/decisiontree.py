@@ -39,7 +39,7 @@ class DecisionTree:
                 else:
                     node = node.right_subtree
             predictions.append(node.value)
-        return predictions
+        return np.array(predictions)
         
     def _grow_tree(self, X, y, depth=0):
         n_samples, n_features = X.shape
@@ -123,6 +123,6 @@ if __name__=="__main__":
     print(f"Fitting Training data to Decision Tree")
     dt.fit(X, Y)
     plot_decision_boundary(dt, X, Y,save_path="results/decisiontree.png")
-    y_pred = nb.predict(X)
+    y_pred = dt.predict(X)
     accuracy = np.sum(y_pred == Y) / len(Y)
     print(f"Decision Tree Accuracy: {accuracy}")
