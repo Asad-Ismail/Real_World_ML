@@ -1,5 +1,13 @@
 import pandas as pd
 import numpy as np
+sys.path.append("../utils")
+from utils import plot_decision_boundary
+
+def get_data():
+    from sklearn.datasets import make_blobs
+    #just to make blobs
+    X, Y = make_blobs(n_samples=100, centers=2, random_state=42)
+    return X,Y
 
 class Node:
     def __init__(self, feature=None, threshold=None, value=None, left_subtree=None, right_subtree=None):
@@ -84,3 +92,15 @@ class DecisionTree:
         entropy = -np.sum([p * np.log2(p) for p in probabilities if p > 0])
         return entropy
 
+
+if __name__=="__main__":
+    X,Y=get_data()
+    print(f"Y min and max are {Y.min()},{Y.max()}")
+    plt.scatter(X[:, 0], X[:, 1], c=Y)
+    plt.savefig('results/data.png')
+    dt=DecisionTree(max_depth=5)
+    dt.fit(X, y)
+    plot_decision_boundary(dt, X, Y,save_path="results/decisiontree.png")
+    y_pred = nb.predict(X)
+    accuracy = np.sum(y_pred == Y) / len(Y)
+    print(f"Accuracy: {accuracy}")
