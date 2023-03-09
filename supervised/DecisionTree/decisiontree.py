@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np
+import sys
+import matplotlib.pyplot as plt
 sys.path.append("../utils")
 from utils import plot_decision_boundary
 
@@ -99,8 +101,9 @@ if __name__=="__main__":
     plt.scatter(X[:, 0], X[:, 1], c=Y)
     plt.savefig('results/data.png')
     dt=DecisionTree(max_depth=5)
-    dt.fit(X, y)
+    print(f"Fitting Training data to Decision Tree")
+    dt.fit(X, Y)
     plot_decision_boundary(dt, X, Y,save_path="results/decisiontree.png")
     y_pred = nb.predict(X)
     accuracy = np.sum(y_pred == Y) / len(Y)
-    print(f"Accuracy: {accuracy}")
+    print(f"Decision Tree Accuracy: {accuracy}")
