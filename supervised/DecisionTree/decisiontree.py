@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import sys
 import matplotlib.pyplot as plt
+from scipy import stats
 sys.path.append("../utils")
 from utils import plot_decision_boundary
 
@@ -27,6 +28,18 @@ class DecisionTree:
         self.n_classes = len(set(y))
         self.n_features = X.shape[1]
         self.tree = self._grow_tree(X, y)
+
+    def predict(self, X):
+        predictions = []
+        for sample in X:
+            node = self.tree
+            while node.left_subtree:
+                if sample[node.feature] <= node.threshold:
+                    node = node.left_subtree
+                else:
+                    node = node.right_subtree
+            predictions.append(node.value)
+        return predictions
         
     def _grow_tree(self, X, y, depth=0):
         n_samples, n_features = X.shape
@@ -68,6 +81,12 @@ class DecisionTree:
         left_indices = np.argwhere(feature_values <= threshold).flatten()
         right_indices = np.argwhere(feature_values > threshold).flatten()
         return left_indices, right_indices
+
+    
+    def _most_common_label(self,y):
+         m = stats.mode(y)[0]
+         print(f"Mode is {m}")
+
     
     def _information_gain(self, y, feature_values, threshold):
         parent_entropy = self._entropy(y)
