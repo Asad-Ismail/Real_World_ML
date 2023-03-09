@@ -84,8 +84,8 @@ class DecisionTree:
 
     
     def _most_common_label(self,y):
-         m = stats.mode(y)[0]
-         print(f"Mode is {m}")
+         m = stats.mode(y)[0][0]
+         return m
 
     
     def _information_gain(self, y, feature_values, threshold):
@@ -119,7 +119,7 @@ if __name__=="__main__":
     print(f"Y min and max are {Y.min()},{Y.max()}")
     plt.scatter(X[:, 0], X[:, 1], c=Y)
     plt.savefig('results/data.png')
-    dt=DecisionTree(max_depth=5)
+    dt=DecisionTree(max_depth=10)
     print(f"Fitting Training data to Decision Tree")
     dt.fit(X, Y)
     plot_decision_boundary(dt, X, Y,save_path="results/decisiontree.png")
