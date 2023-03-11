@@ -42,7 +42,5 @@ After observing some data, the prior distribution is updated using Bayes' rule t
 
 In the context of Bayesian optimization, the observed data consists of the function values at the points that have been evaluated so far. The posterior distribution over functions is used to guide the search for the next point to evaluate, typically by selecting the point that maximizes some acquisition function that trades off exploration and exploitation.
 
-
-
 To Read about Baysian optimization please check out
 https://distill.pub/2020/bayesian-optimization/#FurtherReading
