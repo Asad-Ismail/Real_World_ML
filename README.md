@@ -32,7 +32,6 @@ The following supervised learning algorithms are included in this repository:
 - Logistic Regression 📉
 - k-Nearest Neighbors 🧑‍🤝‍🧑
 - Decision Trees 🌳
-- Random Forests 🌳🌳🌳
 - Support Vector Machines 🤝
 
 Each algorithm includes a detailed README with information on how it works, how to use it, and examples.
