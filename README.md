@@ -43,8 +43,9 @@ The following unsupervised learning algorithms are included in this repository:
 - K-Means Clustering 🧑‍🤝‍🧑🧑‍🤝‍🧑
 - Principal Component Analysis 📈📈📈
 - t-SNE 🌌
-
 Again, each algorithm includes a detailed README with information on how it works, how to use it, and examples.
+
+## Reinforcement Learning
 
 ## 🤝 Contributing
 
