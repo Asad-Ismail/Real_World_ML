@@ -45,7 +45,8 @@ The following unsupervised learning algorithms are included in this repository:
 - t-SNE 🌌
 Again, each algorithm includes a detailed README with information on how it works, how to use it, and examples.
 
-🤖 Hyperparameter Optimization
+## 🤖 Hyperparameter Optimization
+
 The following hyperparameter optimization methods are included in this repository:
 
 🎲 Random Search
