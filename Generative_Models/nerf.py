@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import numpy as np
+import matplotlib.pyplot as plt
 
 class MLP(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, num_layers):
@@ -65,7 +66,6 @@ def main():
     coords = torch.randn(1000, 3)
     colors = torch.randn(1000, 3)
 
-    train_nerf(nerf_model, coords, colors, optimizer, epochs=1000
     train_nerf(nerf_model, coords, colors, optimizer, epochs=1000)
 
     # Image generation parameters
@@ -79,8 +79,6 @@ def main():
     # Generate image
     generated_image = generate_image(nerf_model, img_width, img_height, focal_length, eye, look_at, up)
 
-    # Save generated image
-    import matplotlib.pyplot as plt
     plt.imsave('generated_image.png', generated_image)
     print("Generated image saved as 'generated_image.png'")
 
