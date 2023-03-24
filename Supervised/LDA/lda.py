@@ -71,10 +71,13 @@ scaler = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
 
+print(f"original X_train dataset shape is {X_train.shape}")
 # Apply LDA
 lda = LDA(n_components=2)
 X_train_lda = lda.fit_transform(X_train, y_train)
 X_test_lda = lda.transform(X_test)
+
+print(f"LDA transformed X_train dataset shape is {X_train_lda.shape}")
 
 # Train a classifier on the transformed data
 clf = LogisticRegression(random_state=42)
