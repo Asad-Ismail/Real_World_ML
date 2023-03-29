@@ -44,3 +44,82 @@ class Gridworld:
         return self.state
 
 
+import numpy as np
+
+class Gridworld:
+    def __init__(self, size=4, start=(0, 0), goal=(3, 3)):
+        self.size = size
+        self.start = start
+        self.goal = goal
+        self.state = start
+
+    def step(self, action):
+        x, y = self.state
+
+        if action == 0:  # up
+            y = max(y - 1, 0)
+        elif action == 1:  # right
+            x = min(x + 1, self.size - 1)
+        elif action == 2:  # down
+            y = min(y + 1, self.size - 1)
+        elif action == 3:  # left
+            x = max(x - 1, 0)
+
+        self.state = (x, y)
+
+        reward = -1
+        if self.state == self.goal:
+            reward = 0
+
+        return self.state, reward
+
+    def reset(self):
+        self.state = self.start
+        return self.state
+
+def epsilon_greedy(Q, state, epsilon):
+    if np.random.random() < epsilon:
+        return np.random.randint(4)
+    else:
+        return np.argmax(Q[state])
+
+def sarsa(env, episodes, alpha, gamma, epsilon):
+    Q = np.zeros((env.size, env.size, 4))
+
+    for episode in range(episodes):
+        state = env.reset()
+        action = epsilon_greedy(Q, state, epsilon)
+
+        while state != env.goal:
+            next_state, reward = env.step(action)
+            next_action = epsilon_greedy(Q, next_state, epsilon)
+            
+            Q[state][action] += alpha * (reward + gamma * Q[next_state][next_action] - Q[state][action])
+            
+            state = next_state
+            action = next_action
+
+    return Q
+
+if __name__ == "__main__":
+    env = Gridworld()
+    episodes = 5000
+    alpha = 0.1
+    gamma = 0.99
+    epsilon = 0.1
+
+    Q = sarsa(env, episodes, alpha, gamma, epsilon)
+    
+    # Print the learned Q-values
+    print("Learned Q-values:")
+    print(Q)
+
+    # Test the learned policy
+    state = env.reset()
+    while state != env.goal:
+        action = np.argmax(Q[state])
+        print(f"Current state: {state}, chosen action: {action}")
+        state, _ = env.step(action)
+
+    print(f"Final state: {state}")
+
