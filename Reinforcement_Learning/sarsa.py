@@ -115,11 +115,20 @@ if __name__ == "__main__":
     print(Q)
 
     # Test the learned policy
-    state = env.reset()
-    while state != env.goal:
-        action = np.argmax(Q[state])
-        print(f"Current state: {state}, chosen action: {action}")
-        state, _ = env.step(action)
+    test_episodes = 100
+    total_reward = 0
 
-    print(f"Final state: {state}")
+    for _ in range(test_episodes):
+        state = env.reset()
+        episode_reward = 0
+        while state != env.goal:
+            action = np.argmax(Q[state])
+            state, reward = env.step(action)
+            episode_reward += reward
+        
+        total_reward += episode_reward
+
+    average_reward = total_reward / test_episodes
+    print(f"Average reward during testing: {average_reward}")
+
 
