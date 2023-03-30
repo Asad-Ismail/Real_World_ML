@@ -85,20 +85,19 @@ def epsilon_greedy(Q, state, epsilon):
 
 def sarsa(env, episodes, alpha, gamma, epsilon):
     Q = np.zeros((env.size, env.size, 4))
-
+    total_reward = 0
     for episode in range(episodes):
         state = env.reset()
         action = epsilon_greedy(Q, state, epsilon)
-
+        episode_reward=0
         while state != env.goal:
             next_state, reward = env.step(action)
+            episode_reward+=reward
             next_action = epsilon_greedy(Q, next_state, epsilon)
-            
             Q[state][action] += alpha * (reward + gamma * Q[next_state][next_action] - Q[state][action])
-            
             state = next_state
             action = next_action
-
+        print(f"Reward of episode is {episode_reward}")
     return Q
 
 if __name__ == "__main__":
@@ -111,8 +110,8 @@ if __name__ == "__main__":
     Q = sarsa(env, episodes, alpha, gamma, epsilon)
     
     # Print the learned Q-values
-    print("Learned Q-values:")
-    print(Q)
+    #print("Learned Q-values:")
+    #print(Q)
 
     # Test the learned policy
     test_episodes = 100
