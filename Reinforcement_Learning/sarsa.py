@@ -45,12 +45,9 @@ if __name__ == "__main__":
     epsilon = 0.1
 
     Q = sarsa(env, episodes, alpha, gamma, epsilon)
-    
     # Print the learned Q-values
     #print("Learned Q-values:")
     #print(Q)
-
-    # Test the learned policy
     test_episodes = 100
     total_reward = 0
 
