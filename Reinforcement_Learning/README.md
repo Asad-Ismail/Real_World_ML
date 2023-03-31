@@ -5,13 +5,17 @@ We will learn and implement these concepts/methods
 1. Fundamental Concepts:
 
     Markov Decision Processes (MDPs)
+
     Value functions (state-value and action-value functions)
+
     Bellman equations
+
     Exploration vs. Exploitation trade-off
 
 2. Dynamic Programming (DP) methods:
 
     Policy iteration
+    
     Value iteration
 
 3. Model-free methods:
