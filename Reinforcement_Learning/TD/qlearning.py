@@ -1,5 +1,7 @@
 
-from grid_env import Gridworld
+import sys
+sys.path.append("../")
+from envs.grid_env import Gridworld
 import numpy as np
 
 

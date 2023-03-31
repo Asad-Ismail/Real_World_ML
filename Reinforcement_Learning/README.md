@@ -17,6 +17,7 @@ We will learn and implement these concepts/methods
 3. Model-free methods:
 
     a. Temporal-Difference (TD) Learning:
+    
         - SARSA (on-policy)
         - Q-learning (off-policy)
 
