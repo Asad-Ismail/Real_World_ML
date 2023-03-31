@@ -16,16 +16,15 @@ def q_learning(env, episodes, alpha, gamma, epsilon):
 
     for episode in range(episodes):
         state = env.reset()
-
+        episode_reward = 0
         while state != env.goal:
             action = epsilon_greedy(Q, state, epsilon)
             next_state, reward = env.step(action)
+            episode_reward+=reward
             next_action = np.argmax(Q[next_state])
-
             Q[state][action] += alpha * (reward + gamma * Q[next_state][next_action] - Q[state][action])
-
             state = next_state
-
+        print(f"Reward of episode is {episode_reward}")
     return Q
 
 if __name__ == "__main__":

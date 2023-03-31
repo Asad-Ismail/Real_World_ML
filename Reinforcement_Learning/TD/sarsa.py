@@ -10,8 +10,10 @@ Learning rate (α): Controls the step size of the Q-value updates. A smaller lea
 Discount factor (γ): Determines the importance of future rewards compared to immediate rewards. A value closer to 0 makes the agent focus on immediate rewards, while a value closer to 1 makes the agent consider long-term rewards.
 """
 
+import sys
+sys.path.append("../")
+from envs.grid_env import Gridworld
 import numpy as np
-from grid_env import Gridworld
 
 
 def epsilon_greedy(Q, state, epsilon):
