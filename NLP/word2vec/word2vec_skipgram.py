@@ -8,7 +8,7 @@ import numpy as np
 import random
 
 # Preprocess your text data
-data = "your text data here"
+data = "the car sat on the mat"
 tokens = data.split()
 unique_words = set(tokens)
 
@@ -80,6 +80,13 @@ for epoch in range(epochs):
 
         optimizer.zero_grad()
         logits = model(target, context)
+        print(f"Logits shape is {logits.shape}")
+        print(f"target shape is {target.shape}")
+        print(f"Context shape is {context.shape}")
+        
+        print(f"Target is {target}")
+        
+        print(f"Context is {context}")
 
         target_labels = context.view(-1)
         loss = criterion(logits, target_labels)
