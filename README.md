@@ -62,6 +62,10 @@ Each algorithm includes a detailed README with information on how it works, how 
 
 - In Progress
 
+## NLP
+
+- In Progress
+
 ## 🤝 Contributing
 
 Contributions to MLfromScratch are welcome! If you find a bug or have an idea for a new feature, please submit an issue or pull request.
