@@ -38,4 +38,4 @@ The agent asynchronously updates the global model parameters using its local mod
 
 The agent then synchronizes its local model parameters with the updated global model parameters and continues the process.
 
-A3C has been shown to achieve better performance and faster convergence compared to other methods like Deep Q-Network (DQN) and vanilla A2C. However, it should be noted that more recent algorithms like Proximal Policy Optimization (PPO) and Soft Actor-Critic (SAC) have demonstrated even better performance and stability in various tasks.
+A3C has been shown to achieve better performance and faster convergence compared to other methods like Deep Q-Network (DQN) and vanilla A2C. However, it should be noted that more recent algorithms like Proximal Policy Optimization (PPO) and Soft Actor-Critic (SAC) have demonstrated even better performance and stability in various tasks so we will not implement A3C
