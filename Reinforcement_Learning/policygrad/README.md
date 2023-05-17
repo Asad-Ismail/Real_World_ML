@@ -1,5 +1,7 @@
 In the REINFORCE algorithm, we roll out the complete episodes because it is a Monte Carlo-based method, and the return (G_t) for each time step is required to compute the policy gradient. The return at time step t is calculated as the cumulative discounted reward from that time step until the end of the episode. Therefore, we need to wait until the episode ends to compute the returns and use them to update the policy.
 
+REINFORCE is an on-policy method. This means that it uses the same policy to both generate behavior and evaluate or improve it. On-policy methods like REINFORCE directly estimate the value of a policy that they are currently following, as opposed to off-policy methods, which can learn about the optimal policy independently of the policy being followed.
+
 In contrast, Q-learning is a temporal-difference (TD) learning method that bootstraps the value estimates using the current Q-values. It doesn't require waiting until the end of the episode to update the estimates. Instead, it uses the immediate reward and the estimated value of the next state to make the updates.
 
 Although REINFORCE and Q-learning both aim to solve reinforcement learning problems, their methods for learning are fundamentally different. REINFORCE is a policy-based method that directly optimizes the policy using the gradient of the expected return. In contrast, Q-learning is a value-based method that learns the action-value function Q(s, a) and indirectly derives the policy from the learned Q-values.
