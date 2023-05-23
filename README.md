@@ -52,6 +52,7 @@ The following hyperparameter optimization methods are included in this repositor
 - 🎲 Random Search 🎲
 - Grid Search 🧮
 - Bayesian Optimization 📊
+- Bayseian Optimizaation Upper Bound
 Each algorithm includes a detailed README with information on how it works, how to use it, and examples.
 
 ## Reinforcement Learning
