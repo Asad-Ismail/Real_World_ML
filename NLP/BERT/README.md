@@ -1,3 +1,16 @@
+## BERT (Bidirectional Encoder Representations from Transformers)
+
+BERT is trained using two main objectives: Masked Language Modeling (MLM) and Next Sentence Prediction (NSP).
+
+Masked Language Modeling (MLM): In this task, some percentage of the input data is masked at random, and the model is trained to predict the masked words based on the context provided by the non-masked words. For example, in the sentence "The cat sat on the ___", the word "mat" might be masked and the model would be trained to predict "mat" based on the context provided by the rest of the sentence. This allows the model to learn a bidirectional representation of the sentence, as it must consider the context from both the left and the right of the masked word in order to make its prediction.
+
+Next Sentence Prediction (NSP): In this task, the model is trained to predict whether a sentence B is the actual next sentence that follows sentence A in the original document. During training, 50% of the inputs are a pair in which sentence B is the actual next sentence that follows sentence A, and 50% of the inputs are a pair in which sentence B is a random sentence from the corpus. For example, given two sentences "I went to the store. I bought some milk.", the model would be trained to predict that the second sentence does indeed follow the first. But if the sentences were "I went to the store. The Eiffel Tower is in Paris.", the model would be trained to predict that the second sentence does not logically follow the first.
+
+These two training objectives allow BERT to understand the context of words in a sentence (via MLM) and the relationships between sentences (via NSP), which makes it a powerful model for a wide range of natural language processing tasks.
+
+
+
+
 BERT (Bidirectional Encoder Representations from Transformers) and BART (Bidirectional and Auto-Regressive Transformers) are both transformer-based models developed for natural language processing tasks, but they have different architectures and are used for different types of tasks.
 
 BERT (Bidirectional Encoder Representations from Transformers): BERT is a transformer-based model that uses a bidirectional training approach. This means that it learns contextual relations between words in a text by looking at the words that come before and after a given word. BERT is pre-trained on a large corpus of text and then fine-tuned for specific tasks, such as question answering, named entity recognition, or sentiment analysis. BERT's architecture consists only of the transformer's encoder part.
