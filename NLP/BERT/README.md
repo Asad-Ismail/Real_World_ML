@@ -9,7 +9,7 @@ Next Sentence Prediction (NSP): In this task, the model is trained to predict wh
 These two training objectives allow BERT to understand the context of words in a sentence (via MLM) and the relationships between sentences (via NSP), which makes it a powerful model for a wide range of natural language processing tasks.
 
 
-
+## BERT Vs BART
 
 BERT (Bidirectional Encoder Representations from Transformers) and BART (Bidirectional and Auto-Regressive Transformers) are both transformer-based models developed for natural language processing tasks, but they have different architectures and are used for different types of tasks.
 
