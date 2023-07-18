@@ -8,6 +8,9 @@ Next Sentence Prediction (NSP): In this task, the model is trained to predict wh
 
 These two training objectives allow BERT to understand the context of words in a sentence (via MLM) and the relationships between sentences (via NSP), which makes it a powerful model for a wide range of natural language processing tasks.
 
+
+
+
 '''
 def BERT_objective_function(model, tokens, is_next_label):
     """
