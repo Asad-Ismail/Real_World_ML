@@ -2,3 +2,5 @@
 *-ubyte
 *-ubyte*
 **quora.txt
+**/*.zip
+**.ipynb_checkpoints
