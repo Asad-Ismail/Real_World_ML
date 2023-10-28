@@ -74,6 +74,13 @@ def half_normal_distribution(sigma, y):
 def student_t_distribution(nu, x):
     return t.pdf(x, nu)
 
+def gaussian_pdf(x, mu, sigma2):
+    coefficient = 1.0 / np.sqrt(2 * np.pi * sigma2)
+    exponential_term = np.exp(- (x - mu)**2 / (2 * sigma2))
+    return coefficient * exponential_term
+
+
+
 if __name__ == "__main__":
     # You can test the functions here
     print(bernoulli_distribution(0.5, 1))
@@ -85,3 +92,7 @@ if __name__ == "__main__":
     print(gaussian_distribution(0, 1, 0))
     print(half_normal_distribution(1, 0.5))
     print(student_t_distribution(2, 0.5))
+    mu = 0
+    sigma2 = 1
+    x = 0
+    print(gaussian_pdf(x, mu, sigma2)) 
