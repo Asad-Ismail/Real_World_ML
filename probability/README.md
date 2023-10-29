@@ -40,3 +40,15 @@ def bayesian_update(prior, likelihood):
     normalization = sum(posterior)
     return [p / normalization for p in posterior]
 ```
+
+
+
+
+Confidence Intervals: A common misconception is that a 95% confidence interval means there's a 95% probability that the true parameter lies within the interval. However, this interpretation is incorrect. Instead, if we repeatedly sampled data and computed the 95% CI for each dataset, about 95% of such intervals would contain the true parameter.
+Mnemonics/Cues:
+
+Hessian Matrix: Think "2nd order" since it deals with second-order partial derivatives.
+Fisher Information Matrix: Remember "how much information about θ".
+Logistic Regression: Link "logistic" with "binary outcomes" (0 or 1).
+Exponential Family: Many common distributions are part of this family.
+Confidence Intervals: It's about "repeated sampling", not the probability of a single interval.

@@ -12,6 +12,38 @@
 # - Incorporates prior information about the parameters using a prior distribution P(θ).
 # - Balances information from observed data and prior beliefs.
 
+'''
+### Coin Flipping Experiment:
+
+Imagine you have a coin, and you're not sure if it's fair. You flip it a few times to determine the probability \( \theta \) of it landing heads.
+
+**Scenario**: 
+Let's say you've flipped the coin 3 times, and all 3 times it landed heads. 
+
+1. **Plugin approximation (using Maximum Likelihood Estimation, MLE)**
+   
+   Using MLE, you'd estimate \( \theta \) (probability of heads) as:
+   \[ \theta_{MLE} = \frac{\text{number of heads}}{\text{total flips}} = \frac{3}{3} = 1 \]
+
+   This means using the plugin approximation, you'd predict that any future flips of this coin will always be heads, which seems overly confident, especially given the small sample size.
+
+2. **Bayesian Approach (Marginalizing over parameters)**
+
+   Instead of just plugging in a point estimate like in the MLE, Bayesian statistics incorporates prior beliefs about \( \theta \) and updates these beliefs with the observed data.
+
+   - **Prior**: Let's say our prior belief about \( \theta \) is that it follows a Beta distribution, which is a common choice for representing a distribution over probabilities. Specifically, let's choose a Beta(1,1) prior, which is equivalent to a uniform distribution between 0 and 1. This means before seeing any data, we believe all values of \( \theta \) (from 0 to 1) are equally likely.
+
+   - **Likelihood**: The observed data (3 heads in 3 flips) provides the likelihood.
+
+   - **Posterior**: Using Bayes' theorem, we can combine our prior and likelihood to get a posterior distribution over \( \theta \).
+
+   For prediction (posterior predictive), instead of using a single value (like the MLE), we average (or marginalize) over all possible values of \( \theta \) weighted by their probabilities from the posterior distribution.
+
+   In our example, the Bayesian prediction for the next flip being a head will be something less than 1, even if we've observed 3 heads, because we're averaging over all possible values of \( \theta \) and not just plugging in the MLE.
+
+This Bayesian approach has a natural way of incorporating uncertainty, both from the prior and from the limited data. Instead of making overly confident predictions after just a few observations, the Bayesian predictions tend to be more conservative, which often makes them more robust in practice.
+'''
+
 # Example: Estimating the probability of a coin landing heads.
 
 import numpy as np
