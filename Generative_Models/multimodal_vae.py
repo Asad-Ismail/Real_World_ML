@@ -22,6 +22,7 @@ class ImageDecoder(nn.Module):
         return reconstruction
 
 class TransformerTextDecoder(nn.Module):
+
     def __init__(self, latent_dim, gpt2_model_name='gpt2'):
         super(TransformerTextDecoder, self).__init__()
         self.latent_dim = latent_dim
@@ -29,18 +30,26 @@ class TransformerTextDecoder(nn.Module):
         # Linear layer to project latent vector to GPT-2 input dimension if they do not match
         self.latent_to_gpt2 = nn.Linear(latent_dim, self.gpt2.config.n_embd)
 
-    def forward(self, z, input_ids=None, attention_mask=None):
+    def forward(self, z, past_key_values=None, input_ids=None, attention_mask=None):
+        # Check if we are given some input IDs (for continuing generation)
+        if input_ids is None:
+            # If not, we start generation with just the latent vector 'z'
+            # and the start-of-sequence token
+            input_ids = torch.full((z.size(0), 1), 
+                                   self.gpt2.config.bos_token_id, 
+                                   dtype=torch.long, device=z.device)
         # Project the latent vector to match GPT-2's expected input dimension
-        gpt2_input = self.latent_to_gpt2(z)
-        # Reshape to (batch_size, sequence_length, hidden_size)
-        gpt2_input = gpt2_input.unsqueeze(1).expand(-1, input_ids.size(1), -1)
-        
-        # Get the GPT-2 outputs
-        gpt2_outputs = self.gpt2(inputs_embeds=gpt2_input, attention_mask=attention_mask)
-        
-        # The output tuple includes the language modeling logits
-        lm_logits = gpt2_outputs.logits
-        return lm_logits
+        z = self.latent_to_gpt2(z)
+        # The input embeddings are the sum of token embeddings and the latent vector
+        inputs_embeds = self.gpt2.transformer.wte(input_ids) + z[:, None, :]
+
+        # Get the GPT-2 model outputs
+        outputs = self.gpt2(inputs_embeds=inputs_embeds,
+                            past_key_values=past_key_values,
+                            attention_mask=attention_mask,
+                            use_cache=True)
+
+        return outputs.logits, outputs.past_key_values
 
 class MultimodalVAEDecoder(nn.Module):
     def __init__(self, latent_dim, img_channels, vocab_size):
@@ -126,54 +135,107 @@ class MultimodalVAE(nn.Module):
         Generates text from the latent vector autoregressively using nucleus sampling.
         """
         device = z.device
-        generated_sequence = torch.full((z.size(0), 1), tokenizer.bos_token_id, dtype=torch.long).to(device)
-        
-        for _ in range(max_length):
-            # Decode the latent vector concatenated with the generated tokens so far
-            text_logits = self.decoder.text_decoder(z, generated_sequence).logits[:, -1, :]
-            
-            # Convert logits to probabilities
-            probabilities = F.softmax(text_logits, dim=-1)
-            
-            # Apply top-p (nucleus) filtering
-            filtered_probabilities = top_k_top_p_filtering(probabilities, top_p=0.9)
-            
-            # Sample the next token from the filtered distribution
-            next_token = torch.multinomial(F.softmax(filtered_probabilities, dim=-1), num_samples=1)
-            
-            # Append sampled token to the generated sequence
-            generated_sequence = torch.cat((generated_sequence, next_token), dim=1)
-            
-            # Check if the end of sequence token was generated
-            if next_token in tokenizer.all_special_ids:
-                break
+        generated_sequence = torch.full((z.size(0), 1), 
+                                        tokenizer.bos_token_id, 
+                                        dtype=torch.long, device=device)
 
-        # Decode the generated sequence into text
-        generated_text = tokenizer.batch_decode(generated_sequence, skip_special_tokens=True)
-        return generated_text
+        past_key_values = None
+        for _ in range(max_length):
+            logits, past_key_values = self.decoder.text_decoder(z, 
+                                                                input_ids=generated_sequence, 
+                                                                past_key_values=past_key_values)
+            # Get logits of the last predicted token
+            next_token_logits = logits[:, -1, :]
+            filtered_logits = top_k_top_p_filtering(next_token_logits, top_p=0.9)
+            next_token = torch.multinomial(F.softmax(filtered_logits, dim=-1), num_samples=1)
+            generated_sequence = torch.cat([generated_sequence, next_token], dim=-1)
+
+        return tokenizer.batch_decode(generated_sequence, skip_special_tokens=True)
+    
+    def sample_latent(self, num_samples):
+        """
+        Sample from the prior latent distribution (standard normal distribution).
+        """
+        z = torch.randn(num_samples, self.latent_dim)
+        return z
+
+    def sample(self, num_samples):
+        """
+        Sample new data from the learned distribution.
+        """
+        # Sample from the standard normal distribution
+        z = self.sample_latent(num_samples)
+
+        # Decode the sampled latent vectors
+        img_recon, text_logits = self.decoder(z)
+        return img_recon, text_logits
+
+    def inference(self, images=None, input_ids=None, attention_mask=None):
+        """
+        Perform inference on input data to get the reconstructed images and text.
+        """
+        with torch.no_grad():
+            if images is not None:
+                image_features = self.image_encoder(images)
+                image_mu = self.image_latent(image_features)
+                image_logvar = torch.zeros_like(image_mu)  # Assuming fixed unit variance
+            else:
+                image_mu = image_logvar = None
+
+            if input_ids is not None:
+                text_outputs = self.text_encoder(input_ids=input_ids, attention_mask=attention_mask)
+                text_features = text_outputs.last_hidden_state[:, 0, :]
+                text_mu = self.text_latent(text_features)
+                text_logvar = torch.zeros_like(text_mu)  # Assuming fixed unit variance
+            else:
+                text_mu = text_logvar = None
+
+            if image_mu is not None and text_mu is not None:
+                # If we have both modalities, we use the product of experts
+                combined_mu, combined_logvar = self.product_of_experts((image_mu, image_logvar), (text_mu, text_logvar))
+                z = self.reparameterize(combined_mu, combined_logvar)
+            elif image_mu is not None:
+                z = self.reparameterize(image_mu, image_logvar)
+            elif text_mu is not None:
+                z = self.reparameterize(text_mu, text_logvar)
+            else:
+                raise ValueError("At least one modality must be provided for inference.")
+
+            # Decode the latent vector into the respective modalities
+            img_recon, text_logits = self.decoder(z)
+            return img_recon, text_logits
     
 # Training loop
 def train(model, data_loader, optimizer, epochs, tokenizer):
     model.train()
     for epoch in range(epochs):
         for batch_idx, (images, texts) in enumerate(data_loader):
-            text_inputs = tokenizer(texts, padding=True, return_tensors='pt')
+            # Prepare the data
+            text_inputs = tokenizer(texts, padding=True, return_tensors='pt').to(model.device)
+            images = images.to(model.device)
+            labels = text_inputs['input_ids']
+            # Shift the labels so that what's predicted at each step is the next token in the sequence
+            shifted_labels = labels[:, 1:].contiguous()
+            labels = labels[:, :-1].contiguous()
+            attention_mask = text_inputs['attention_mask'][:, :-1].contiguous()
 
             optimizer.zero_grad()
 
             # Forward pass through the model
-            img_recon, text_logits, latent, image_mu, image_logvar, text_mu, text_logvar = model(images, text_inputs['input_ids'], text_inputs['attention_mask'])
+            img_recon, text_logits, combined_mu, combined_logvar = model(images, labels, attention_mask)
 
-            # Compute the reconstruction losses
+            # Compute the reconstruction loss for images
             img_loss = F.mse_loss(img_recon, images)
-            text_loss = F.cross_entropy(text_logits.view(-1, text_logits.size(-1)), text_inputs['input_ids'].view(-1))
+            # Compute the loss for text (ignore index for padding)
+            text_loss = F.cross_entropy(text_logits.view(-1, text_logits.size(-1)), 
+                                        shifted_labels.view(-1), 
+                                        ignore_index=tokenizer.pad_token_id)
 
-            # Compute the KL divergence for each latent representation
-            image_kl_divergence = -0.5 * torch.sum(1 + image_logvar - image_mu.pow(2) - image_logvar.exp())
-            text_kl_divergence = -0.5 * torch.sum(1 + text_logvar - text_mu.pow(2) - text_logvar.exp())
+            # KL divergence for each latent representation
+            kl_divergence = -0.5 * torch.sum(1 + combined_logvar - combined_mu.pow(2) - combined_logvar.exp())
 
             # Total loss
-            loss = img_loss + text_loss + image_kl_divergence + text_kl_divergence
+            loss = img_loss + text_loss + kl_divergence
 
             # Backpropagation
             loss.backward()
@@ -181,6 +243,7 @@ def train(model, data_loader, optimizer, epochs, tokenizer):
 
             if batch_idx % 100 == 0:
                 print(f'Epoch {epoch}, Batch {batch_idx}, Loss: {loss.item()}')
+
 
 
 if __name__=="__main__":
