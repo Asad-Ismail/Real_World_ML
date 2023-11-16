@@ -77,3 +77,27 @@ posterior = Normal(combined_mean, 1 / combined_precision.sqrt())
 print(f"Combined Posterior Mean: {posterior.mean}")
 print(f"Combined Posterior Variance: {posterior.variance}")
 ```
+
+## VAE Posterior Collapse
+
+## Posterior Collapse
+Posterior collapse occurs when the variational posterior `q_ϕ(z|x)` becomes identical to the prior `p_θ(z)`, often a standard Gaussian distribution `N(0, I)`. When this happens, the KL divergence term `D_KL(q_ϕ(z|x) || p_θ(z))` in the Evidence Lower Bound (ELBO) becomes zero. This might seem like an optimal scenario, but it's actually problematic. It means that the model ignores the latent variables `z` when generating the data, which defeats the purpose of having a latent space to capture meaningful representations of the data.
+
+In other words, the decoder `p_θ(x|z)` becomes too powerful and learns to reconstruct the data without relying on the latent variables `z`. As a result, the latent variables `z` fail to capture any useful information about the data, and the VAE does not learn a useful latent representation.
+
+## KL Annealing
+KL annealing is a technique used to prevent posterior collapse. The idea is to gradually increase the weight of the KL divergence term in the ELBO loss function during training. Initially, this weight (denoted as `β`) is set to zero, which means that the VAE is trained to only maximize the likelihood of the data, similar to a standard autoencoder. Gradually, `β` is increased towards 1, which brings the model closer to the VAE objective, where both the likelihood of the data and the KL divergence are considered.
+
+By slowly increasing `β`, the model starts by learning good reconstructions and then gradually begins to take into account the structure of the latent space. This helps in learning a more balanced model where the latent space captures meaningful information while still providing good reconstructions.
+
+## Cyclical Annealing
+Cyclical annealing is an extension of KL annealing where the process of increasing `β` is repeated multiple times in cycles. Each cycle starts with `β` close to 0 and increases to 1 throughout the cycle. The idea is that each cycle uses the latent representations learned in previous cycles to warm-start the optimization. This repeated cycling can lead to a more stable learning of meaningful latent representations as it prevents the model from settling too quickly into a local optimum where the posterior collapses.
+
+The text suggests that cyclical annealing can be more effective than simple KL annealing because it allows the model to refine its understanding of the latent space over multiple cycles, potentially leading to a richer and more informative latent representation.
+
+In summary, KL annealing and cyclical annealing are techniques to address the problem of posterior collapse in VAEs, helping to ensure that the latent space encodes meaningful information about the data.
+
+The key is that we want the posterior to be similar to the prior but not identical. If the posterior is identical to the prior (i.e., the KL divergence is zero), the latent variable z does not contain any information about the input 
+x and is not utilized effectively. This is the scenario of posterior collapse, where the latent variables are not used, and the model essentially becomes a standard autoencoder.
+On the other hand, if the posterior is too different from the prior (i.e., the KL divergence is large), the model may overfit to the training data, and the latent space may not generalize well to unseen data.
+The goal, therefore, is to find a sweet spot where the posterior is close enough to the prior to benefit from its regularizing effect (thus ensuring a well-formed and general latent space) but still contains sufficient information about the input data to be useful for reconstruction. This balancing act is typically achieved by carefully tuning the VAE objective function, potentially using techniques like KL annealing to dynamically adjust the emphasis on the KL divergence term during training.
