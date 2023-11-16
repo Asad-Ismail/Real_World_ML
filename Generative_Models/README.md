@@ -101,3 +101,19 @@ The key is that we want the posterior to be similar to the prior but not identic
 x and is not utilized effectively. This is the scenario of posterior collapse, where the latent variables are not used, and the model essentially becomes a standard autoencoder.
 On the other hand, if the posterior is too different from the prior (i.e., the KL divergence is large), the model may overfit to the training data, and the latent space may not generalize well to unseen data.
 The goal, therefore, is to find a sweet spot where the posterior is close enough to the prior to benefit from its regularizing effect (thus ensuring a well-formed and general latent space) but still contains sufficient information about the input data to be useful for reconstruction. This balancing act is typically achieved by carefully tuning the VAE objective function, potentially using techniques like KL annealing to dynamically adjust the emphasis on the KL divergence term during training.
+
+
+## Hierarichal VAEs
+In a hierarchical VAE, there are multiple layers of latent variables arranged in a hierarchy. The higher layers tend to capture more abstract, global features of the data, while the lower layers capture more detailed, specific features.
+
+"Conditionally independent given the higher layer" means that once you know the value of the latent variables in the higher layer, the latent variables in the lower layer are independent of each other. The dependencies between lower-layer variables are only through their common 'ancestor' variables in the higher layer.
+
+Here's an example to illustrate this concept:
+
+Imagine a hierarchical model trying to generate an image of a face.
+At the top layer of the hierarchy, one latent variable might represent the presence of a face versus no face.
+The next layer might have latent variables for different parts of the face: one for the eyes, one for the nose, and one for the mouth.
+Given the top layer (the presence of a face), the positions and shapes of the eyes, nose, and mouth are independent of each other. The eye variable doesn't directly influence the mouth variable; it only does so indirectly through the higher-level face variable.
+This conditional independence allows the model to factorize the complex joint distribution of data into simpler distributions that are easier to manage and model. Each branch of the "tree" in the hierarchy operates independently of the others, given the state of the parent nodes, and this is what gives the hierarchical structure a tree-like form.
+
+In practice, this allows for more efficient computation and learning, as each set of lower-layer variables can be dealt with separately, parallelizing parts of the inference and generation processes. It also means that the model can learn a rich representation of the data, capturing complex dependencies without needing an excessively large number of parameters.
