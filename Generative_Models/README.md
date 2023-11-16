@@ -117,3 +117,17 @@ Given the top layer (the presence of a face), the positions and shapes of the ey
 This conditional independence allows the model to factorize the complex joint distribution of data into simpler distributions that are easier to manage and model. Each branch of the "tree" in the hierarchy operates independently of the others, given the state of the parent nodes, and this is what gives the hierarchical structure a tree-like form.
 
 In practice, this allows for more efficient computation and learning, as each set of lower-layer variables can be dealt with separately, parallelizing parts of the inference and generation processes. It also means that the model can learn a rich representation of the data, capturing complex dependencies without needing an excessively large number of parameters.
+
+
+## PixelCNN Mask Types
+
+PixelCNN models generate images pixel by pixel in an autoregressive manner. To ensure the model respects the autoregressive property, different mask types are applied to the convolutional layers:
+
+### Mask Type A
+- **Used in the First Layer**: Ensures that the prediction for each pixel does not include information from itself or any future pixels.
+- **Enforces Causality**: The first layer predicts the value of each pixel based solely on the pixels that have already been observed.
+
+### Mask Type B
+- **Used in Subsequent Layers**: After the first layer, allows the model to use the current pixel's value for predicting itself.
+- **Conditioning on Current Pixel**: Subsequent layers can condition on the current pixel's value, capturing the context more accurately.
+
