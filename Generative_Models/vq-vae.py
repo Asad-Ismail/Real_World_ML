@@ -172,3 +172,59 @@ def sample_image(vqvae, prior_model, codebook, image_shape):
 # and an initialized codebook. `image_shape` defines the desired output image size.
 generated_image = sample_image(vqvae, prior_model, codebook, image_shape=(32, 32))
 
+
+
+'''
+
+DALLE Paper fixing one hot vector decritization with soft vector
+
+def sample_gumbel(logits, temperature, device='cpu'):
+    """
+    Sample from the Gumbel-Softmax distribution.
+
+    :param logits: Logits (log-probabilities) of the discrete distribution.
+    :param temperature: Temperature parameter for Gumbel-Softmax.
+    :param device: Device to perform computations on ('cpu' or 'cuda').
+    :return: Soft one-hot encoded sample.
+    """
+    # Draw samples from Gumbel distribution
+    gumbel_noise = -torch.log(-torch.log(torch.rand(logits.shape, device=device)))
+    # Add Gumbel noise to the logits
+    gumbel_logits = (logits + gumbel_noise) / temperature
+    # Apply softmax to sample
+    y_soft = F.softmax(gumbel_logits, dim=-1)
+    return y_soft
+
+def straight_through_estimator(y_soft, codebook):
+    """
+    Apply the straight-through estimator for Gumbel-Softmax.
+
+    :param y_soft: Softmax output from the Gumbel-Softmax sampling.
+    :param codebook: An array of codebook vectors.
+    :return: A tuple of the hard codebook index and the differentiable approximation.
+    """
+    # Get the index of the max probability
+    _, k = y_soft.max(dim=-1)
+    # Get the hard one-hot vector
+    y_hard = F.one_hot(k, num_classes=y_soft.size(-1)).float()
+    # Subtract y_soft and add y_hard for the straight-through gradient
+    y = y_hard - y_soft.detach() + y_soft
+    # Multiply by the codebook to get the latent code
+    z_q = torch.matmul(y, codebook)
+    return k, z_q
+
+# Example usage:
+logits = torch.randn(1, 10)  # Logits for a categorical distribution over 10 classes
+temperature = 0.5  # Temperature for Gumbel-Softmax
+codebook = torch.randn(10, 64)  # Example codebook with 10 vectors, each 64-dimensional
+
+# Sample using Gumbel-Softmax
+y_soft = sample_gumbel(logits, temperature)
+
+# Apply straight-through estimator
+k, z_q = straight_through_estimator(y_soft, codebook)
+
+print(f"Index of the selected codebook vector: {k}")
+print(f"Differentiable latent code: {z_q}")
+
+'''
