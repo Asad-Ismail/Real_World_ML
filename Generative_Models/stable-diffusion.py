@@ -97,6 +97,29 @@ class StableDiffusion:
         
         return image
 
+
+def stable_diffusion_loss(predicted_noise, target_noise, predicted_image, target_image, text_embeddings, image_embeddings):
+    # Denoising loss
+    denoising_loss = nn.MSELoss()(predicted_noise, target_noise)
+    
+    # Reconstruction loss
+    reconstruction_loss = nn.MSELoss()(predicted_image, target_image)
+    
+    # Conditional loss - using CLIP model to ensure text-image alignment
+    clip_model = ...  # Pre-trained CLIP model
+    image_features = clip_model.encode_image(predicted_image)
+    text_features = clip_model.encode_text(text_embeddings)
+    conditional_loss = -torch.cosine_similarity(text_features, image_features).mean()
+    
+    # Combine the losses
+    total_loss = denoising_loss + reconstruction_loss + conditional_loss
+    
+    # Optionally add other loss components
+    # total_loss += adversarial_loss_component + kl_divergence + regularization_terms
+    
+    return total_loss
+
+
 # Usage
 stable_diffusion = StableDiffusion(text_encoder, unet, vae)
 text_prompt = "An astronaut riding a horse"
