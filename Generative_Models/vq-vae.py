@@ -118,11 +118,10 @@ def sample_from_prior(pixelcnn, grid_size, num_embeddings):
     for i in range(grid_size[0]):
         for j in range(grid_size[1]):
             # Get the probabilities for the next code from PixelCNN
-            probabilities = pixelcnn(latent_grid)
-            
+            logits = pixelcnn(latent_grid)
+            probs = F.softmax(logits[:, :, i, j], dim=-1)
             # Sample a code based on the probabilities
-            next_code = torch.multinomial(probabilities[i, j], num_samples=1)
-            
+            next_code = torch.multinomial(probs[i, j], num_samples=1)
             # Place the sampled code into the grid
             latent_grid[i, j] = next_code
             
