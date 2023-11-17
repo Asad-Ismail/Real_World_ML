@@ -131,3 +131,6 @@ PixelCNN models generate images pixel by pixel in an autoregressive manner. To e
 - **Used in Subsequent Layers**: After the first layer, allows the model to use the current pixel's value for predicting itself.
 - **Conditioning on Current Pixel**: Subsequent layers can condition on the current pixel's value, capturing the context more accurately.
 
+## Autoregressive Models
+The main advantage of AR models is that it is easy to compute, and optimize, the exact likelihood of each sequence (data vector). The main disadvantage is that generating samples is inherently sequential, which can be slow. In addition, the method does not learn a compact latent representation of the data.
+
