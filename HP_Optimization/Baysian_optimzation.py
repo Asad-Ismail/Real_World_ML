@@ -61,6 +61,9 @@ class BayesianOptimization:
             elif self.acq == 'ei':
                 res = minimize(lambda x: -self.acquisition_function(x.reshape(1, -1), model, y_best),
                                x0=np.random.uniform(self.bounds[0][0], self.bounds[0][1], len(self.bounds)))
+            elif self.acq == 'pi':
+                res = minimize(lambda x: -self.acquisition_function(x.reshape(1, -1), model, y_best),
+                               x0=np.random.uniform(self.bounds[0][0], self.bounds[0][1], len(self.bounds)))
             
             x_new = res.x.tolist()
             y_new = self.f(x_new)
