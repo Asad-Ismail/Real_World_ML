@@ -33,6 +33,10 @@ class BayesianOptimization:
             mean, std = model.predict(X, return_std=True)
             z = (y_best - mean) / std
             return (y_best - mean) * norm.cdf(z) + std * norm.pdf(z)
+        elif self.acq == 'pi':
+            mean, std = model.predict(X, return_std=True)
+            z = (mean-y_best-self.kappa) / std
+            return norm.cdf(z)
         
     def optimize(self, n_iter):
         """
