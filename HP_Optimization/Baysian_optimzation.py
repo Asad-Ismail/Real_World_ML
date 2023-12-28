@@ -33,6 +33,10 @@ class BayesianOptimization:
             mean, std = model.predict(X, return_std=True)
             z = (y_best - mean) / std
             return (y_best - mean) * norm.cdf(z) + std * norm.pdf(z)
+        elif self.acq == 'pi':
+            mean, std = model.predict(X, return_std=True)
+            z = (mean-y_best-self.kappa) / std
+            return norm.cdf(z)
         
     def optimize(self, n_iter):
         """
@@ -55,6 +59,9 @@ class BayesianOptimization:
                 res = minimize(lambda x: -self.acquisition_function(x.reshape(1, -1), model, y_best),
                                x0=np.random.uniform(self.bounds[0][0], self.bounds[0][1], len(self.bounds)))
             elif self.acq == 'ei':
+                res = minimize(lambda x: -self.acquisition_function(x.reshape(1, -1), model, y_best),
+                               x0=np.random.uniform(self.bounds[0][0], self.bounds[0][1], len(self.bounds)))
+            elif self.acq == 'pi':
                 res = minimize(lambda x: -self.acquisition_function(x.reshape(1, -1), model, y_best),
                                x0=np.random.uniform(self.bounds[0][0], self.bounds[0][1], len(self.bounds)))
             
