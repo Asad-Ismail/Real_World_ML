@@ -1,6 +1,6 @@
 # Real_World_ML
 
-Welcome to Real_World_ML, a repository dedicated to the exploration and understanding of machine learning (ML) and deep learning (DL) in the real world. This repository serves as a comprehensive guide for those who wish to grasp the core principles behind popular ML/DL techniques and apply them to solve real-world problems. Whether you're a student, researcher, or industry professional, this repository has something to offer for everyone passionate about learning and applying ML/DL in their field.
+This repository is dedicated to the exploration and understanding of machine learning (ML) and deep learning (DL) in the real world. This repository is useful guide for those who wish to grasp the core principles behind popular ML/DL techniques and apply them to solve real-world problems.
 
 ## What This Repo Offers
 
@@ -35,6 +35,6 @@ We're constantly adding new content and updates. Star or watch this repository t
 
 ## Contact
 
-If you have any questions, comments, or just want to connect, please open an issue with the tag 'question' or reach out directly through [Your Contact Information].
+If you have any questions, comments, or just want to connect, please open an issue with the tag 'question' or reach out directly through asadismaeel@gmail.com.
 
 Let's embark on this journey to demystify the world of machine learning and deep learning together. Happy Learning!
