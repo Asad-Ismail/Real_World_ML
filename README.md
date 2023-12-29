@@ -1,4 +1,4 @@
-# Real_World_ML
+# Learn Real World ML
 
 This repository is dedicated to the exploration and understanding of machine learning (ML) and deep learning (DL) in the real world. This repository is useful guide for those who wish to grasp the core principles behind popular ML/DL techniques and apply them to solve real-world problems.
 
