@@ -57,7 +57,7 @@ Stationarity is a crucial assumption in many time series models because models b
 ### Handling Non-Stationarity:
 
 - **Differencing**: Subtracting the current value from the previous removes trends and cycles, often leading to stationarity.
-- **Transformation**: Applying transformations like logarithms or square roots can stabilize the variance.
+- **Transformation**: Applying transformations like logarithms or square roots, moving average and smoothing can stabilize the variance.
 - **Detrending**: Removing the trend component from the series.
 
 Understanding and ensuring stationarity in time series data is vital before proceeding with further analysis or modeling, as it impacts the effectiveness and reliability of statistical inferences and predictive models.
