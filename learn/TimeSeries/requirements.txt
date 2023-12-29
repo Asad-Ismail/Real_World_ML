@@ -1,0 +1,24 @@
+tqdm
+pydantic
+pystan
+requests
+xgboost
+#fbprophet ## install it via conda forge chanel
+lightgbm
+bayesian-optimization
+pandas
+holidays
+python-dateutil
+numpy
+scipy
+mxnet
+gluonts
+tensorflow
+scikit-learn
+matplotlib
+statsmodels
+beautifultable
+tabulate
+pmdarima
+shap
+Jinja2
