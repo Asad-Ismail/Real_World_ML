@@ -1,7 +1,7 @@
 # Learn and Apply ML/DL to Real World
 
 <p align="center">
-  <img src="images/logo.png" alt="Real World ML">
+  <img src="images/logo.png" alt="Real World ML" width="20%" height="20%">
 </p>
 
 
