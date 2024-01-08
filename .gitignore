@@ -5,3 +5,5 @@
 **/*.zip
 **.ipynb_checkpoints
 **sample_data
+**.csv
+**/*.csv
