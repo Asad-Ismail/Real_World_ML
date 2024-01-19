@@ -49,10 +49,10 @@ def load_data():
     logging.info(f"Data loaded with training shape: {X_train.shape}")
 
     # Saving to CSV files
-    X_train.to_csv('creditcardfraud/X_train.csv', index=False)
-    X_val.to_csv('creditcardfraud/X_val.csv', index=False)
-    y_train.to_csv('creditcardfraud/y_train.csv', index=False)
-    y_val.to_csv('creditcardfraud/y_val.csv', index=False)
+    np.savetxt('creditcardfraud/X_train.csv', X_train, delimiter=',')
+    np.savetxt('creditcardfraud/X_val.csv', X_val, delimiter=',')
+    np.savetxt('creditcardfraud/y_train.csv', y_train, delimiter=',')
+    np.savetxt('creditcardfraud/y_val.csv', y_val, delimiter=',')
 
 
 if __name__=="__main__":

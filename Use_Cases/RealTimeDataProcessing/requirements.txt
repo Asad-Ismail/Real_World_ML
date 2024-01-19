@@ -2,4 +2,6 @@ pandas
 kafka-python
 scikit-learn 
 pyspark      
-numpy         
+numpy     
+requests    
+tqdm
