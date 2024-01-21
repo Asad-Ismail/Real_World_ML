@@ -14,4 +14,14 @@ bin/kafka-console-producer.sh --topic [Your_Topic_Name] --bootstrap-server local
 bin/kafka-console-consumer.sh --topic [Your_Topic_Name] --from-beginning --bootstrap-server localhost:9092
 
 
+## Train Model
+
+Use spark_training.py to train the model
+
+
+## Ingerence 
+
+Use spark_inference.py to use trained model to infer on the streaming data coming from kafka message
+
+
 
