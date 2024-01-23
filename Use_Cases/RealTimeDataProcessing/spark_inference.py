@@ -58,7 +58,7 @@ query = predictions.writeStream \
     .outputMode("append") \
     .format("console") \
     .option("truncate", False) \ 
-    .option("numRows", 3) \    r
+    .option("numRows", 3) \ 
     .start()
 
 query.awaitTermination()
