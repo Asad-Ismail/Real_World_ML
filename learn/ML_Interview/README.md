@@ -38,23 +38,40 @@
 - Exploratory Data Analysis (EDA): Missing values, univariate analysis, feature distributions
 - Data Cleaning: Handling missing values, outliers
 - Data Preprocessing: Normalization, one-hot encoding, grouping, feature scaling
+- Class Imbalance hangling (Oversampling, undersampling, SMOTE)
+ 
 
 ### Step 4: Feature Engineering
 
-1. Domain-Specific Features:
+#### 1. Domain-Specific Features:
 
 **Transaction Behavior** : Features like average transaction amount, frequency of transactions, and deviation from the user's normal transaction patterns.
+
+
 **User Account Features** : Age of the account, frequency of password changes, number of failed login attempts.
+
+
 **Geographical Features** : Mismatch between the user's known location and the transaction location.
 
-2. Time-Based Features:
+#### 2. Time-Based Features:
 
 **Temporal Patterns**: Time of the transaction can be crucial. For instance, transactions in the middle of the night might be more suspicious.
 
-3. Aggregation Features:
+#### 3. Aggregation Features:
 
 **Statistical Aggregates** : Mean, median, and standard deviation of user transactions over a certain period.
+
 **Rolling Window Statistics** : Calculating aggregates over rolling windows (e.g., 7-day rolling average of transaction amounts).
+
+### 4. Feature Selection:
+
+**PCA**
+
+**Lasso L1 Regression**
+
+**Ridge L2 Regression**
+
+
 
 
 ### Step 5: Initial Evaluation Metrics/KPIs
@@ -64,11 +81,18 @@
 ### Step 6: Model Selection and Training
 - Choosing appropriate models (e.g., Decision Trees, Random Forest, Gradient Boosting, Neural Networks)
 - Training models on the preprocessed dataset
-- Feature importance analysis
+- HP tuning
 
 ### Step 7: Model Evaluation
 - Offline Evaluation: Cross-validation, confusion matrix, ROC curves
-- Model interpretation and explainability
+
+#### Step 8. Model Interpretability:
+
+- Permutation Feature Importance: Assess the increase in the model's prediction error after permuting each feature. More error implies higher importance.
+- Partial Dependence Plots (PDPs): Show the effect of a single feature on the predicted outcome of a model.
+-  Use Interpretable models
+-  LIME 
+-  SHAP
 
 ### Step 8: Online Evaluation (if applicable)
 - A/B Testing
@@ -92,3 +116,7 @@
 - Ensuring data privacy and security
 - Compliance with legal and ethical standards
 - Bias and fairness in model predictions
+- Permutation Test
+- Invariance Test
+- Directional Test
+- Differential Privavy
