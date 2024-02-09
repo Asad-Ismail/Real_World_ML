@@ -40,8 +40,7 @@ def load_data():
         get_data()
 
     model_data = pd.read_csv('creditcardfraud/creditcard.csv', delimiter=',')
-
-
+    
     # Split data into features and target without converting to NumPy array
     X = model_data.drop('Class', axis=1)
     y = model_data['Class']
