@@ -4,7 +4,8 @@ import time
 import os
 
 # Corrected paths
-img_path = "/Users/gmeax/Downloads/example_images"
+#img_path = "/Users/gmeax/Downloads/example_images"
+img_path ="/Users/gmeax/Downloads/Bitter_Gourd/BTP2_BG_202305/inter"
 out_path = "/Users/gmeax/Downloads/example_process_images"  # Removed the trailing space
 
 images=os.listdir(img_path)

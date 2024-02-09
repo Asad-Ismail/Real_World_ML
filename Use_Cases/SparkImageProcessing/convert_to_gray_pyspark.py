@@ -9,13 +9,16 @@ import time
 import os
 
 # Corrected paths
-img_path = "/Users/gmeax/Downloads/example_images"
+#img_path = "/Users/gmeax/Downloads/example_images"
+img_path ="/Users/gmeax/Downloads/Bitter_Gourd/BTP2_BG_202305/inter"
 out_path = "/Users/gmeax/Downloads/example_process_images"  # Removed the trailing space
 
 # Initialize SparkSession
 #spark = SparkSession.builder.appName("ImageProcessing").getOrCreate()
 # local mode use as many threads as cores
-spark = SparkSession.builder.master("local[*]").appName("ImageProcessing").getOrCreate()
+spark = SparkSession.builder.master("local[*]")\
+        .config("spark.driver.memory", "4g") \
+        .appName("ImageProcessing").getOrCreate()
 
 # Log the number of logical cores available on your machine
 num_cores = multiprocessing.cpu_count()
