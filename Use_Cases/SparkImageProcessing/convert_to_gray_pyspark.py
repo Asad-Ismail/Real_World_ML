@@ -70,7 +70,12 @@ print(f"Execution time: {end_time - start_time} seconds")
 broadcast_out_path = spark.sparkContext.broadcast(out_path)
 
 
+print(f"Writing images for each parition!")
 # Use foreachPartition to distribute the image writing process
 df_processed.foreachPartition(write_images_to_disk)
+
+#print(f"Writing Parquet Data!")
+# Write data as parquet
+#df_processed.write.parquet(os.path.join(broadcast_out_path.value,"images.parquet"))
 
 spark.stop()
