@@ -5,6 +5,7 @@ from sklearn.metrics import mean_squared_error
 import matplotlib.pyplot as plt
 
 
+#Make dataset
 X, y = make_classification(n_samples=100, n_features=20, n_classes=2, random_state=42)
 y = np.where(y == 0, -1, 1)  # Convert labels to -1 and 1
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -63,6 +64,7 @@ class GradientBoosting:
                         learner.threshold = threshold
                         learner.feature_index = feature_i
                         min_error = error
+            # Adaboost update
             # Calculate alpha
             EPS = 1e-10
             learner.alpha = 0.5 * np.log((1.0 - min_error + EPS) / (min_error + EPS))
@@ -78,3 +80,14 @@ class GradientBoosting:
         return y_pred
 
 
+if __name__=="__main__":
+    # Initialize and fit the model
+    model = GradientBoosting(n_learners=10)
+    model.fit(X_train, y_train)
+
+    # Predictions
+    y_pred = model.predict(X_test)
+
+    # Evaluate
+    accuracy = np.mean(y_pred == y_test)
+    print(f"Accuracy: {accuracy:.2f}")
