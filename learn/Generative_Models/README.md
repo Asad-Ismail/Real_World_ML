@@ -1,5 +1,12 @@
 ## We will study different kinds of Generative models
 
+## Overview of Generative models
+
+<div align="center">
+<img src="vis_imgs/review.png">
+</div> 
+
+
 ### Variational Autoencoders (VAEs)
 
 Variational Autoencoders (VAEs) are a type of generative model that learn to encode data into a lower-dimensional latent space and reconstruct it back to the original space. They are trained to maximize the Evidence Lower Bound (ELBO).
