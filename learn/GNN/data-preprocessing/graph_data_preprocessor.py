@@ -67,9 +67,18 @@ def load_data(data_dir, transaction_data, identity_data, train_data_ratio, valid
 def get_features_and_labels(transactions_df, transactions_id_cols, transactions_cat_cols, transactions_cat_cols_xgboost, output_dir):
     # Get features
     non_feature_cols = ['isFraud', 'TransactionDT'] + transactions_id_cols.split(",")
+    print(f"Non features cols are {non_feature_cols}")
     feature_cols = [col for col in transactions_df.columns if col not in non_feature_cols]
+    print(f"features cols are {feature_cols}")
     logging.info("Categorical columns: {}".format(transactions_cat_cols.split(",")))
     features = pd.get_dummies(transactions_df[feature_cols], columns=transactions_cat_cols.split(",")).fillna(0)
+    print(features.head())
+    # Identify the dummy columns (newly created columns after get_dummies)
+    original_cols = set(transactions_df[feature_cols].columns)
+    new_cols = set(features.columns) - original_cols
+    # Convert only the dummy columns to integers
+    features[list(new_cols)] = features[list(new_cols)].astype(int)
+    print(features.head())
     features['TransactionAmt'] = features['TransactionAmt'].apply(np.log10)
     logging.info("Transformed feature columns: {}".format(list(features.columns)))
     logging.info("Shape of features: {}".format(features.shape))
@@ -81,7 +90,9 @@ def get_features_and_labels(transactions_df, transactions_id_cols, transactions_
     cat_cols_xgb = transactions_cat_cols_xgboost.split(",")
     logging.info("Categorical feature columns for XGBoost: {}".format(cat_cols_xgb))
     logging.info("Numerical feature column for XGBoost: 'TransactionAmt'")
-    features_xgb = pd.get_dummies(transactions_df[['TransactionID']+cat_cols_xgb], columns=cat_cols_xgb).fillna(0)
+    features_xgb = pd.get_dummies(transactions_df[cat_cols_xgb], columns=cat_cols_xgb).fillna(0)
+    features_xgb = features_xgb.astype(int)
+    features_xgb.insert(loc=0, column='TransactionID', value=transactions_df['TransactionID'])
     features_xgb['TransactionAmt'] = features['TransactionAmt']
     features_xgb.to_csv(os.path.join(output_dir, 'features_xgboost.csv'), index=False, header=False)
     logging.info("Wrote features to file: {}".format(os.path.join(output_dir, 'features_xgboost.csv')))
