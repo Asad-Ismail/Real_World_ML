@@ -17,12 +17,53 @@ Terraform is a prominent IaC tool that facilitates this approach by allowing use
 **Provider Block**:
  Specifies the cloud or service provider that Terraform will use to provision resources.
 
+  ```
+provider "aws" {
+  region = "us-west-2"
+}
+
+ ```
+
 **Resource Blocks**:
  Define the desired infrastructure resources (e.g., virtual machines, networks, databases) and their configurations.
+
+  ```
+ resource "aws_instance" "example" {
+  ami           = "ami-0c55b159cbfafe1f0"
+  instance_type = "t2.micro"
+}
+  ```
 
 **Variable Declarations**:
  Define input variables used to parameterize the configuration and make it reusable.
 
+  ```
+ variable "instance_count" {
+  description = "The number of EC2 instances to create"
+  type        = number
+  default     = 2
+}
+
+  ```
+
+
 **Output Values**: Define output values that can be extracted from the infrastructure after it's provisioned.
 
+  ```
+output "instance_public_ip" {
+  value = aws_instance.example.public_ip
+}
+  ```
+
 **Modules**: Encapsulate reusable components of Terraform configurations for better organization and abstraction.
+  
+  ```
+
+modules/
+├── ec2_instance
+│   ├── main.tf
+│   └── variables.tf
+└── vpc
+    ├── main.tf
+    └── variables.tf
+  ```
