@@ -58,7 +58,6 @@ output "instance_public_ip" {
 **Modules**: Encapsulate reusable components of Terraform configurations for better organization and abstraction.
   
   ```
-
 modules/
 ├── ec2_instance
 │   ├── main.tf
@@ -67,3 +66,19 @@ modules/
     ├── main.tf
     └── variables.tf
   ```
+
+**TerraForm Workflow**
+
+ ```
+# Initialize Terraform in the working directory
+terraform init
+
+# Generate and preview the execution plan
+terraform plan
+
+# Apply the changes to provision the infrastructure
+terraform apply
+
+# Destroy the provisioned infrastructure
+terraform destroy
+ ```
