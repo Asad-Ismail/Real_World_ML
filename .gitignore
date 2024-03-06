@@ -7,5 +7,6 @@
 **sample_data
 **.csv
 **/*.csv
+**.pyc
 git_commit_push.sh
 gitconfig.sh
