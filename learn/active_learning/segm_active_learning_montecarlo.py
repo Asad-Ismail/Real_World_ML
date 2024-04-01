@@ -16,51 +16,56 @@ Compute Variance:
 For each pixel, compute the variance across the Monte Carlo samples.
 
 '''
-
-
 import torch
+import torch.nn.functional as F
 import numpy as np
 
+# Set seed for reproducibility
+torch.manual_seed(0)
 
-# Assume DataLoader and SegmentationModel from the earlier example
-# SegmentationModel should contain dropout layers
+# Mock datasets replace with your datasets
+unlabeled_dataset = list(range(10)) 
 
-model = SegmentationModel()
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+# Parameters
+mc_samples = 10  # Number of Monte Carlo samples
+n_queries = 5 
 
-# Training function
-def train_model(dataset):
-    # ... typical segmentation model training loop ...
+class SegmentationModelWithDropout(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.dropout = torch.nn.Dropout(0.5)  
+
+    def forward(self, img):
+        confidence = torch.randn(1, 2, 2, 2)  
+        confidence = self.dropout(confidence)  
+        return {'confidence': confidence}
+
+model = SegmentationModelWithDropout()
+
+def apply_dropout(m):
+    if type(m) == torch.nn.Dropout:
+        m.train()
+
+# Enable dropout during inference
+model.eval()
+model.apply(apply_dropout) 
+
+uncertainties = []
+for img in unlabeled_dataset:
+    mc_predictions = []
+    for _ in range(mc_samples):
+        segms = model(img)  # Forward pass with dropout enabled
+        probs = F.softmax(segms['confidence'], dim=1)
+        mc_predictions.append(probs)
+        
+    mc_predictions = torch.stack(mc_predictions)  #(mc_samples, N, C, H, W)
+
+    # Compute variance across the Monte Carlo samples for each pixel
+    variance = mc_predictions.var(dim=0).mean(dim=[0, 1, 2, 3]).item()  # Mean variance across all pixels and classes
+    uncertainties.append(variance)
 
 # Active learning loop
-n_queries = 5
-for _ in range(n_queries):
-    # Train on labeled data
-    train_model(labeled_dataset)
+selected_indices = np.argsort(uncertainties)[::-1][:min(len(uncertainties), n_queries)]
+print(f'Images to label are: {selected_indices}')
 
-    # Predict on unlabeled data and get uncertainties
-    uncertainties = []
-
-    # Number of Monte Carlo samples
-    n_mc_samples = 10
-
-    for img in unlabeled_dataset:
-        mc_samples = []
-        for _ in range(n_mc_samples):
-            model.train()  # Ensure dropout is turned on
-            logits = model(img)
-            probs = torch.nn.functional.softmax(logits, dim=1)
-            mc_samples.append(probs)
-        
-        mc_samples = torch.stack(mc_samples)
-        # Variance across the Monte Carlo samples for each pixel
-        variance = mc_samples.var(dim=0).sum(dim=1)  # Sum variances for a single image uncertainty score
-        uncertainties.append(variance.item())
-
-    # Select top N most uncertain images
-    N = 10
-    most_uncertain_indices = np.argsort(uncertainties)[-N:]
-
-    # Query expert and update datasets (as earlier)
-
-print("Active learning with model variance completed!")
+print("Active learning completed!")

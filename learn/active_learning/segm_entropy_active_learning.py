@@ -2,8 +2,7 @@ import torch
 import numpy as np
 import random
 
-# Mock datasets replace with your datasets
-labeled_dataset = list(range(10))
+# Mock datasets replace with your dataset
 unlabeled_dataset = list(range(10))
 
 
