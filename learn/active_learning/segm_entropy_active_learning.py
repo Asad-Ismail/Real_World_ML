@@ -26,7 +26,7 @@ uncertainties = []
 for img in unlabeled_dataset:
     segms = model(img)
     probs = torch.nn.functional.softmax(segms['confidence'],dim=1).max(dim=1)[0]
-    entropies = -torch.sum(probs * torch.log(probs), dim=[0,1,2]) 
+    entropies = -torch.sum(probs * torch.log(1e-9+probs), dim=[0,1,2]) 
     uncertainties.append(entropies.item())
 
 
