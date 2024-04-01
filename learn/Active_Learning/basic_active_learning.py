@@ -1,44 +1,42 @@
 import torch
 import numpy as np
+import random
 
-# Assume we have some DataLoader or similar mechanism to fetch labeled and unlabeled data
-# labeled_dataset and unlabeled_dataset
-from data import labeled_dataset, unlabeled_dataset
+# Mock datasets replace with your datasets
+labeled_dataset = list(range(10))
+unlabeled_dataset = list(range(10, 100))
 
-# Hypothetical object detection model (could be Faster R-CNN, YOLO, etc.)
-from models import ObjectDetectionModel
+# Mock Object Detection Model replace with actual detection model
+class ObjectDetectionModel:
+    def __init__(self):
+        pass
+    def parameters(self):
+        return [torch.nn.Parameter(torch.randn(2, 2))]
+    
+    def __call__(self, img):
+        num_detections = random.randint(1, 5)
+        detections = [{'confidence': random.random()} for _ in range(num_detections)]
+        return detections
 
 # Initialize
 model = ObjectDetectionModel()
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
-# Training function
-def train_model(dataset):
-    # ... standard object detection training loop ...
+# Get detection scores for unlabelled dataset
+uncertainties = []
+for img in unlabeled_dataset:
+    detections = model(img)
+    # can replace with any aggrefation function mean, min, max 
+    agg_confidence = np.mean([det['confidence'] for det in detections])
+    uncertainties.append(agg_confidence)
+
 
 # Active learning loop
 n_queries = 5
 for _ in range(n_queries):
-    # Train on labeled data
-    train_model(labeled_dataset)
-
-    # Predict on unlabeled data and get uncertainties (based on detection confidences)
-    uncertainties = []
-    for img in unlabeled_dataset:
-        detections = model(img)
-        # Just as an example: get the maximum detection confidence for each image
-        max_confidence = max([det.confidence for det in detections])
-        uncertainties.append(max_confidence)
-
-    # Select the images with confidences closest to some threshold, e.g., 0.5
+    # Select the images with confidences closest to the threshold
     threshold = 0.5
     uncertainties = np.array(uncertainties)
     most_uncertain_indices = np.where(np.abs(uncertainties - threshold) < 0.1)[0]
-
-    # Ask an expert to label these images
-    # Here we'll just simulate this step by transferring images from the unlabeled to the labeled dataset
-    for idx in most_uncertain_indices:
-        labeled_dataset.append(unlabeled_dataset[idx])
-        del unlabeled_dataset[idx]
-
+    ## Save most uncertain images and label them
+    
 print("Active learning completed!")
