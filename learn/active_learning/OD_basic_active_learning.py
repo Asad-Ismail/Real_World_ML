@@ -32,11 +32,11 @@ for img in unlabeled_dataset:
 
 # Active learning loop
 n_queries = 5
-for _ in range(n_queries):
-    # Select the images with confidences closest to the threshold
-    threshold = 0.5
-    uncertainties = np.array(uncertainties)
-    most_uncertain_indices = np.where(np.abs(uncertainties - threshold) < 0.1)[0]
-    ## Save most uncertain images and label them
+threshold = 0.5
+uncertainties = np.array(uncertainties)
+most_uncertain_indices = np.where(np.abs(uncertainties - threshold) < 0.1)[0]
+selected_indices=sorted(most_uncertain_indices, reverse=True)[:min(len(most_uncertain_indices),n_queries)]
+print(f'Images to labels are {selected_indices}')
+## Save most uncertain images and label them
     
 print("Active learning completed!")
