@@ -4,7 +4,7 @@ import random
 
 # Mock datasets replace with your datasets
 labeled_dataset = list(range(10))
-unlabeled_dataset = list(range(10, 100))
+unlabeled_dataset = list(range(10))
 
 # Mock Object Detection Model replace with actual detection model
 class ObjectDetectionModel:
