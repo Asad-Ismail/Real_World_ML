@@ -16,8 +16,6 @@ The cycle repeats for each new feature or improvement, gradually building up the
 - **Confidence in Refactoring**: The comprehensive test suite allows for refactoring with confidence that existing functionality is not broken.
 - **Documentation**: Tests serve as a form of documentation that describes what the code is supposed to do.
 
-Example (Python):
-
 ```python
 # Red: Write a failing test
 
