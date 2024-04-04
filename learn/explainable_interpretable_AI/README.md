@@ -1,5 +1,3 @@
-
-
 ## Interpretable Vs Explainable AI
 
 #### Interpretable AI
