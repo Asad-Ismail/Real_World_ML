@@ -26,20 +26,48 @@ Explainable AI, on the other hand, involves complex models that are inherently o
 
 ## Permutation Importance
 
-1. Get a trained model.
-2. Shuffle the values in a single column, make predictions using the resulting dataset. Use these predictions and the true target values to calculate how much the loss function suffered from shuffling. That performance deterioration measures the importance of the variable you just shuffled.
-3. Return the data to the original order (undoing the shuffle from step 2). Now repeat step 2 with the next column in the dataset, until you have calculated the importance of each column.
+Permutation Importance is a straightforward approach to gauge the significance of each feature in your dataset relative to the model's performance.
 
+### Steps:
 
-## Partial Dependencies plot (PDP)
-We  use the fitted model to predict outcome. But we repeatedly alter the value for one variable at a time to make a series of predictions. We vary this variable from low to high and measure the differnce in predictio for all data points. Can be interpreted as coefficents in liner/logistic regression but it can be used for much complex models
+1. **Initialize with a Trained Model:** Begin with your model that has already been trained on your dataset.
+2. **Evaluate Feature Importance:**
+   - For each feature column in the dataset, shuffle its values. This disrupts the relationship between the feature and the outcome.
+   - With the shuffled dataset, make predictions and assess the impact on the model's accuracy or performance metric. The degradation in performance signifies the feature's importance.
+   - Restore the data to its original order before proceeding to the next feature.
+3. **Iterate:** Repeat the process for each feature to compile a comprehensive importance ranking.
 
+## Partial Dependence Plots (PDP)
+
+Partial Dependence Plots (PDP) provide insights into the relationship between features and the prediction outcome, across a range of values.
+
+### Overview:
+
+- PDPs use the trained model to predict outcomes, systematically altering one feature value at a time, while keeping others constant.
+- By observing how predictions change with varying levels of a single feature, we can infer the relationship between that feature and the outcome.
+- PDPs are akin to observing coefficients in linear models but are applicable to more complex scenarios, offering a graphical representation of the feature's effect on predictions.
 
 ## SHAP Values (SHapley Additive exPlanations)
-How much was a prediction driven by the fact that the feature has that value, instead of some baseline value.
-SHAP values do this in a way that guarantees a nice property. Specifically, you decompose a prediction with the following equation:
 
-sum(SHAP values for all features) = pred_for_team - pred_for_baseline_values
+SHAP Values offer a comprehensive breakdown of each feature's contribution to a prediction, based on cooperative game theory.
+
+### Concept:
+
+- SHAP values articulate the contribution of each feature to the difference between the actual prediction and a baseline prediction.
+- They ensure an equitable distribution of contribution across all features, encapsulated by the formula:
+  ```
+  sum(SHAP values for all features) = prediction for instance - prediction for baseline
+  ```
+**Example**:
+
+If we use the median house price from our training dataset as the baseline, our baseline prediction is the median value. This means that if we had no information about a house's features (size, location, number of bedrooms, etc.), our best guess would be the median price.
+
+When we calculate SHAP values or any other feature attribution method, we are essentially asking: "How does knowing the size of the house, its location, etc., change our prediction from this baseline (median) prediction?"
+
+
+
+  
+
 
 
 
