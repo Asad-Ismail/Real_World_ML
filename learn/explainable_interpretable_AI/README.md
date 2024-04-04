@@ -24,11 +24,11 @@ Explainable AI, on the other hand, involves complex models that are inherently o
 
 ## Explainable AI for Stuctured Data/Models
 
-## Permutation Importance
+### Permutation Importance
 
 Permutation Importance is a straightforward approach to gauge the significance of each feature in your dataset relative to the model's performance.
 
-### Steps:
+#### Steps:
 
 1. **Initialize with a Trained Model:** Begin with your model that has already been trained on your dataset.
 2. **Evaluate Feature Importance:**
@@ -37,21 +37,21 @@ Permutation Importance is a straightforward approach to gauge the significance o
    - Restore the data to its original order before proceeding to the next feature.
 3. **Iterate:** Repeat the process for each feature to compile a comprehensive importance ranking.
 
-## Partial Dependence Plots (PDP)
+### Partial Dependence Plots (PDP)
 
 Partial Dependence Plots (PDP) provide insights into the relationship between features and the prediction outcome, across a range of values.
 
-### Overview:
+#### Concept:
 
 - PDPs use the trained model to predict outcomes, systematically altering one feature value at a time, while keeping others constant.
 - By observing how predictions change with varying levels of a single feature, we can infer the relationship between that feature and the outcome.
 - PDPs are akin to observing coefficients in linear models but are applicable to more complex scenarios, offering a graphical representation of the feature's effect on predictions.
 
-## SHAP Values (SHapley Additive exPlanations)
+### SHAP Values (SHapley Additive exPlanations)
 
 SHAP Values offer a comprehensive breakdown of each feature's contribution to a prediction, based on cooperative game theory.
 
-### Concept:
+#### Concept:
 
 - SHAP values articulate the contribution of each feature to the difference between the actual prediction and a baseline prediction.
 - They ensure an equitable distribution of contribution across all features, encapsulated by the formula:
