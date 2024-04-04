@@ -17,8 +17,6 @@ The cycle repeats for each new feature or improvement, gradually building up the
 - **Documentation**: Tests serve as a form of documentation that describes what the code is supposed to do.
 
 ```python
-# Red: Write a failing test
-
 # Red Test: Implement the function to make the test fail
 def test_addition():
     assert addition(2, 3) == 5
@@ -26,7 +24,7 @@ def test_addition():
 # Green: Implement the function to make the test pass
 def addition(a, b):
     return a + b
-
+    
 # Refactor: If necessary, refactor both the test and the implementation
 # In this simple case, no refactoring needed.
 
