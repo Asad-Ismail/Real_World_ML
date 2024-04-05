@@ -76,6 +76,19 @@ class VDVAEDecoder(nn.Module):
         eps = torch.randn_like(std)
         return mean + eps * std
 
+
+class VDVAE(nn.Module):
+    def __init__(self, num_levels):
+        super(VDVAE, self).__init__()
+        self.encoder = VDVAEEncoder(num_levels)
+        self.decoder = VDVAEDecoder(num_levels)
+    
+    def forward(self, x):
+        latents = self.encoder(x)
+        recon_x = self.decoder(latents)
+        return recon_x
+
+
 input_img = torch.randn(1, 1, 28, 28)  
 num_levels = 3  
 vdvae = VDVAE(num_levels)
