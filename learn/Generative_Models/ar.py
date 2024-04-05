@@ -1,1 +1,0 @@
- probs = F.softmax(logits[:, :, i, j], dim=-1)
