@@ -1,229 +1,156 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import timm
+from einops import rearrange
 
-class Encoder(nn.Module):
-    def __init__(self, input_channels, hidden_dims):
-        super(Encoder, self).__init__()
-        # Define the encoder architecture here
-        # ...
-
-    def forward(self, x):
-        # Encode the input x to latent space representation
-        # ...
-        return z_e
-
-class Codebook(nn.Module):
-    def __init__(self, num_embeddings, embedding_dim):
-        super(Codebook, self).__init__()
-        self.embeddings = nn.Embedding(num_embeddings, embedding_dim)
-        self.embeddings.weight.data.uniform_(-1.0 / num_embeddings, 1.0 / num_embeddings)
-
-    def forward(self, z_e):
-        # Find the closest codebook entries to z_e
-        # ...
-        return z_q
-    
-
-class Codebook(nn.Module):
-    def __init__(self, num_embeddings, embedding_dim):
-        super(Codebook, self).__init__()
+class VectorQuantizer(nn.Module):
+    def __init__(self, num_embeddings, embedding_dim, commitment_cost=0.25):
+        super().__init__()
         self.num_embeddings = num_embeddings
         self.embedding_dim = embedding_dim
-        self.embeddings = nn.Embedding(num_embeddings, embedding_dim)
-        self.embeddings.weight.data.uniform_(-1.0 / num_embeddings, 1.0 / num_embeddings)
-
-    def forward(self, z_e):
-        # Flatten z_e to match against the embeddings
-        z_e_flat = z_e.view(-1, self.embedding_dim)
+        self.commitment_cost = commitment_cost
         
-        # Calculate distances of z_e to embeddings
-        distances = (
-            torch.sum(z_e_flat ** 2, dim=1, keepdim=True) +
-            torch.sum(self.embeddings.weight ** 2, dim=1) -
-            2 * torch.matmul(z_e_flat, self.embeddings.weight.t())
-        )
+        # Initialize the embedding table
+        self.embedding = nn.Embedding(num_embeddings, embedding_dim)
+        self.embedding.weight.data.uniform_(-1/num_embeddings, 1/num_embeddings)
+
+    def forward(self, inputs):
+        # Convert inputs from BCHW -> BHWC
+        inputs = inputs.permute(0, 2, 3, 1)
+        input_shape = inputs.shape
         
-        # Find the closest embeddings indices for each entry in z_e
-        min_distances = torch.argmin(distances, dim=1).unsqueeze(1)
+        # Flatten input
+        flat_input = inputs.reshape(-1, self.embedding_dim)
+
+        # Calculate distances
+        distances = (torch.sum(flat_input**2, dim=1, keepdim=True) 
+                    + torch.sum(self.embedding.weight**2, dim=1)
+                    - 2 * torch.matmul(flat_input, self.embedding.weight.t()))
+            
+        # Encoding
+        encoding_indices = torch.argmin(distances, dim=1)
+        encodings = torch.zeros(encoding_indices.shape[0], self.num_embeddings, device=inputs.device)
+        encodings.scatter_(1, encoding_indices.unsqueeze(1), 1)
         
-        # Convert indices to one-hot encodings
-        z_q = torch.zeros(min_distances.size(0), self.num_embeddings, device=z_e.device)
-        z_q.scatter_(1, min_distances, 1)
+        # Quantize and unflatten
+        quantized = torch.matmul(encodings, self.embedding.weight)
+        quantized = quantized.reshape(input_shape)
         
-        # Multiply by the embedding weight to get the quantized latent vector
-        z_q = torch.matmul(z_q, self.embeddings.weight).view(z_e.shape)
-
-        z_q = z_e + (z_q - z_e).detach()  # Straight-through estimator
+        # Loss
+        e_latent_loss = F.mse_loss(quantized.detach(), inputs)
+        q_latent_loss = F.mse_loss(quantized, inputs.detach())
+        loss = q_latent_loss + self.commitment_cost * e_latent_loss
         
-        return z_q
+        quantized = inputs + (quantized - inputs).detach()  # Straight through estimator for gradient flow as argmin is non differentiable
+        #In forward pass: quantized_st = quantized
+        #In backward pass: gradient flows through inputs as if we did nothing
+        #This tricks the network into learning despite the non-differentiable operation
+        
+        # Convert quantized from BHWC -> BCHW
+        quantized = quantized.permute(0, 3, 1, 2)
+        return quantized, loss, encoding_indices.reshape(input_shape[:-1])
 
-
-
-class Decoder(nn.Module):
-    def __init__(self, output_channels, hidden_dims):
-        super(Decoder, self).__init__()
-        # Define the decoder architecture here
-        # ...
-
-    def forward(self, z_q):
-        # Decode the quantized latent representation z_q to reconstruction
-        # ...
-        return x_recon
-
-class VQVAE(nn.Module):
-    def __init__(self, input_channels, output_channels, hidden_dims, num_embeddings, embedding_dim):
-        super(VQVAE, self).__init__()
-        self.encoder = Encoder(input_channels, hidden_dims)
-        self.codebook = Codebook(num_embeddings, embedding_dim)
-        self.decoder = Decoder(output_channels, hidden_dims)
+class Encoder(nn.Module):
+    def __init__(self, backbone_name='resnet18', embedding_dim=64):
+        super().__init__()
+        # Load pretrained backbone from timm
+        self.backbone = timm.create_model(backbone_name, features_only=True, pretrained=True)
+        
+        # Get the output channels of the last layer
+        dummy_input = torch.randn(1, 3, 224, 224)
+        features = self.backbone(dummy_input)
+        last_channels = features[-1].shape[1]
+        
+        # Add final convolution to get desired embedding dimension
+        self.final_conv = nn.Conv2d(last_channels, embedding_dim, 1)
 
     def forward(self, x):
-        z_e = self.encoder(x)
-        z_q = self.codebook(z_e)
-        x_recon = self.decoder(z_q)
-        return x_recon
+        features = self.backbone(x)
+        return self.final_conv(features[-1])
 
-    def compute_loss(self, x, x_recon, z_e, z_q):
-        # Compute reconstruction loss
-        recon_loss = F.mse_loss(x_recon, x)
-        # Compute codebook loss
-        codebook_loss = torch.mean(torch.norm(z_e - z_q.detach(), dim=1)) + torch.mean(torch.norm(z_q - z_e.detach(), dim=1))
-        # Combine losses
-        loss = recon_loss + codebook_loss
-        return loss
+class Decoder(nn.Module):
+    def __init__(self, embedding_dim=64):
+        super().__init__()
+        self.decoder = nn.Sequential(
+            nn.ConvTranspose2d(embedding_dim, 512, kernel_size=4, stride=2, padding=1),
+            nn.ReLU(),
+            nn.ConvTranspose2d(512, 256, kernel_size=4, stride=2, padding=1),
+            nn.ReLU(),
+            nn.ConvTranspose2d(256, 128, kernel_size=4, stride=2, padding=1),
+            nn.ReLU(),
+            nn.ConvTranspose2d(128, 64, kernel_size=4, stride=2, padding=1),
+            nn.ReLU(),
+            nn.ConvTranspose2d(64, 3, kernel_size=4, stride=2, padding=1),
+            nn.Tanh()
+        )
 
-# Instantiate the model
-vqvae = VQVAE(input_channels=..., output_channels=..., hidden_dims=..., num_embeddings=..., embedding_dim=...)
+    def forward(self, x):
+        return self.decoder(x)
 
-# Training loop pseudocode
-for x in data_loader:
-    # Forward pass
-    x_recon = vqvae(x)
-    # Compute loss
-    loss = vqvae.compute_loss(x, x_recon, vqvae.encoder(x), vqvae.codebook(vqvae.encoder(x)))
-    # Backward and optimize
+class VQVAE(nn.Module):
+    def __init__(self, 
+                 num_embeddings=512,
+                 embedding_dim=64,
+                 backbone_name='resnet18',
+                 commitment_cost=0.25):
+        super().__init__()
+        
+        self.encoder = Encoder(backbone_name=backbone_name, embedding_dim=embedding_dim)
+        self.vector_quantizer = VectorQuantizer(num_embeddings, embedding_dim, commitment_cost)
+        self.decoder = Decoder(embedding_dim=embedding_dim)
+
+    def forward(self, x):
+        z = self.encoder(x)
+        quantized, vq_loss, encoding_indices = self.vector_quantizer(z)
+        x_recon = self.decoder(quantized)
+        
+        return x_recon, vq_loss, encoding_indices
+
+    def encode(self, x):
+        z = self.encoder(x)
+        _, _, encoding_indices = self.vector_quantizer(z)
+        return encoding_indices
+
+    def decode(self, encoding_indices):
+        # Convert indices to one-hot encodings
+        encodings = torch.zeros(encoding_indices.shape[0], 
+                              self.vector_quantizer.num_embeddings,
+                              encoding_indices.shape[1],
+                              encoding_indices.shape[2],
+                              device=encoding_indices.device)
+        encodings.scatter_(1, encoding_indices.unsqueeze(1), 1)
+        
+        # Multiply with embedding weights
+        quantized = torch.matmul(encodings.permute(0, 2, 3, 1), 
+                                self.vector_quantizer.embedding.weight)
+        quantized = quantized.permute(0, 3, 1, 2)
+        
+        return self.decoder(quantized)
+
+def train_step(model, optimizer, images, device):
+    images = images.to(device)
     optimizer.zero_grad()
-    loss.backward()
+    
+    # Forward pass
+    reconstructions, vq_loss, _ = model(images)
+    
+    # Reconstruction loss
+    recon_loss = F.mse_loss(reconstructions, images)
+    
+    # Total loss
+    total_loss = recon_loss + vq_loss
+    
+    # Backward pass
+    total_loss.backward()
     optimizer.step()
-
-
-## Image generation
-
-def sample_from_prior(pixelcnn, grid_size, num_embeddings):
-    # Initialize an empty grid of latent codes
-    latent_grid = torch.zeros(grid_size, dtype=torch.int64)
     
-    # Autoregressively sample each latent code in the grid
-    for i in range(grid_size[0]):
-        for j in range(grid_size[1]):
-            # Get the probabilities for the next code from PixelCNN
-            logits = pixelcnn(latent_grid)
-            probs = F.softmax(logits[:, :, i, j], dim=-1)
-            # Sample a code based on the probabilities
-            next_code = torch.multinomial(probs[i, j], num_samples=1)
-            # Place the sampled code into the grid
-            latent_grid[i, j] = next_code
-            
-    return latent_grid
+    return total_loss.item(), recon_loss.item(), vq_loss.item()
 
-# Assuming we have a trained PixelCNN model and some parameters:
-# grid_size: The dimensions of the latent grid (e.g., (32, 32))
-# num_embeddings: The number of possible embeddings (size of the codebook)
-#latent_grid = sample_from_prior(trained_pixelcnn, grid_size=(32, 32), num_embeddings=512)
-
-def map_to_codebook(grid_indices, codebook):
-    """
-    Map a grid of discrete latent codes to the nearest vectors in the codebook.
-
-    :param grid_indices: A 2D tensor of discrete latent code indices.
-    :param codebook: An instance of the Codebook class with pre-trained embeddings.
-    :return: A 3D tensor of the nearest codebook vectors corresponding to the latent codes.
-    """
-    # Get the height and width of the grid
-    height, width = grid_indices.shape
-    
-    # Flatten the grid indices to use advanced indexing
-    flat_indices = grid_indices.view(-1)
-    
-    # Index into the codebook using the flattened indices
-    flat_quantized_latents = codebook.embeddings(flat_indices)
-    
-    # Reshape back to the original grid with an added embedding dimension
-    quantized_latents = flat_quantized_latents.view(height, width, -1)
-    
-    return quantized_latents
-
-
-def sample_image(vqvae, prior_model, codebook, image_shape):
-    # Sample a sequence of latent codes from the prior model (e.g., PixelCNN)
-    latent_codes_sequence = sample_from_prior(prior_model, image_shape)
-    
-    # Quantize the latent codes by mapping them to the nearest codebook vectors
-    quantized_latents = map_to_codebook(latent_codes_sequence, codebook)
-    
-    # Pass the quantized latents through the decoder to generate an image
-    generated_image = vqvae.decoder(quantized_latents)
-    
-    return generated_image
-
-# Assume we have a trained VQ-VAE (vqvae), a trained prior model (prior_model),
-# and an initialized codebook. `image_shape` defines the desired output image size.
-generated_image = sample_image(vqvae, prior_model, codebook, image_shape=(32, 32))
-
-
-
-'''
-
-DALLE Paper fixing one hot vector decritization with soft vector
-
-def sample_gumbel(logits, temperature, device='cpu'):
-    """
-    Sample from the Gumbel-Softmax distribution.
-
-    :param logits: Logits (log-probabilities) of the discrete distribution.
-    :param temperature: Temperature parameter for Gumbel-Softmax.
-    :param device: Device to perform computations on ('cpu' or 'cuda').
-    :return: Soft one-hot encoded sample.
-    """
-    # Draw samples from Gumbel distribution
-    gumbel_noise = -torch.log(-torch.log(torch.rand(logits.shape, device=device)))
-    # Add Gumbel noise to the logits
-    gumbel_logits = (logits + gumbel_noise) / temperature
-    # Apply softmax to sample
-    y_soft = F.softmax(gumbel_logits, dim=-1)
-    return y_soft
-
-def straight_through_estimator(y_soft, codebook):
-    """
-    Apply the straight-through estimator for Gumbel-Softmax.
-
-    :param y_soft: Softmax output from the Gumbel-Softmax sampling.
-    :param codebook: An array of codebook vectors.
-    :return: A tuple of the hard codebook index and the differentiable approximation.
-    """
-    # Get the index of the max probability
-    _, k = y_soft.max(dim=-1)
-    # Get the hard one-hot vector
-    y_hard = F.one_hot(k, num_classes=y_soft.size(-1)).float()
-    # Subtract y_soft and add y_hard for the straight-through gradient
-    y = y_hard - y_soft.detach() + y_soft
-    # Multiply by the codebook to get the latent code
-    z_q = torch.matmul(y, codebook)
-    return k, z_q
-
-# Example usage:
-logits = torch.randn(1, 10)  # Logits for a categorical distribution over 10 classes
-temperature = 0.5  # Temperature for Gumbel-Softmax
-codebook = torch.randn(10, 64)  # Example codebook with 10 vectors, each 64-dimensional
-
-# Sample using Gumbel-Softmax
-y_soft = sample_gumbel(logits, temperature)
-
-# Apply straight-through estimator
-k, z_q = straight_through_estimator(y_soft, codebook)
-
-print(f"Index of the selected codebook vector: {k}")
-print(f"Differentiable latent code: {z_q}")
-
-'''
+# Initialize model
+model = VQVAE(
+    num_embeddings=512,
+    embedding_dim=64,
+    backbone_name='resnet18',
+    commitment_cost=0.25
+)
