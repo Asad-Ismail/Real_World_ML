@@ -43,7 +43,7 @@ class VectorQuantizer(nn.Module):
         loss = q_latent_loss + self.commitment_cost * e_latent_loss
         
         quantized = inputs + (quantized - inputs).detach()  # Straight through estimator for gradient flow as argmin is non differentiable
-        #In forward pass: quantized_st = quantized
+        #In forward pass: quantized = quantized
         #In backward pass: gradient flows through inputs as if we did nothing
         #This tricks the network into learning despite the non-differentiable operation
         
