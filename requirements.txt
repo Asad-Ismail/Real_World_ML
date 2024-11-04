@@ -2,6 +2,5 @@ numpy
 matplotlib
 # just for data
 sklearn
-**.zip
 torch
 timm
