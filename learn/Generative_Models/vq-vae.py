@@ -3,6 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import timm
 from einops import rearrange
+import matplotlib.pyplot as plt
+from datasets import get_cifar10_loaders
 
 class VectorQuantizer(nn.Module):
     def __init__(self, num_embeddings, embedding_dim, commitment_cost=0.25):
@@ -104,7 +106,6 @@ class VQVAE(nn.Module):
         z = self.encoder(x)
         quantized, vq_loss, encoding_indices = self.vector_quantizer(z)
         x_recon = self.decoder(quantized)
-        
         return x_recon, vq_loss, encoding_indices
 
     def encode(self, x):
@@ -131,26 +132,85 @@ class VQVAE(nn.Module):
 def train_step(model, optimizer, images, device):
     images = images.to(device)
     optimizer.zero_grad()
-    
     # Forward pass
     reconstructions, vq_loss, _ = model(images)
-    
     # Reconstruction loss
     recon_loss = F.mse_loss(reconstructions, images)
-    
     # Total loss
     total_loss = recon_loss + vq_loss
-    
     # Backward pass
     total_loss.backward()
     optimizer.step()
     
     return total_loss.item(), recon_loss.item(), vq_loss.item()
 
-# Initialize model
-model = VQVAE(
-    num_embeddings=512,
-    embedding_dim=64,
-    backbone_name='resnet18',
-    commitment_cost=0.25
-)
+def train_vqvae(model, train_loader, num_epochs, device, learning_rate=1e-4):
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    model = model.to(device)
+    
+    for epoch in range(num_epochs):
+        model.train()
+        total_train_loss = 0
+        
+        for batch_idx, (images, _) in enumerate(train_loader):
+            loss, recon_loss, vq_loss = train_step(model, optimizer, images, device)
+            total_train_loss += loss
+            
+            if batch_idx % 100 == 0:
+                print(f'Epoch: {epoch}, Batch: {batch_idx}, Loss: {loss:.4f}, '
+                      f'Recon Loss: {recon_loss:.4f}, VQ Loss: {vq_loss:.4f}')
+        
+        avg_loss = total_train_loss / len(train_loader)
+        print(f'Epoch {epoch} Average Loss: {avg_loss:.4f}')
+
+def inference_step(model, images, device):
+    model.eval()
+    with torch.no_grad():
+        images = images.to(device)
+        reconstructions, _, encoding_indices = model(images)
+        # Get discrete codes
+        codes = encoding_indices.cpu().numpy()
+        return reconstructions.cpu(), codes
+
+def visualize_results(original, reconstruction, num_images=5):
+    fig, axes = plt.subplots(2, num_images, figsize=(15, 6))
+    
+    for i in range(num_images):
+        # Show original
+        axes[0, i].imshow(original[i].permute(1, 2, 0).clip(0, 1))
+        axes[0, i].axis('off')
+        axes[0, i].set_title('Original')
+        # Show reconstruction
+        axes[1, i].imshow(reconstruction[i].permute(1, 2, 0).clip(0, 1))
+        axes[1, i].axis('off')
+        axes[1, i].set_title('Reconstructed')
+    
+    plt.tight_layout()
+    plt.show()
+
+
+if __name__ == "__main__":
+    # Hyperparameters
+    BATCH_SIZE = 32
+    NUM_EPOCHS = 10
+    DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
+    # Choose dataset (uncomment one)
+    train_loader, test_loader = get_cifar10_loaders(BATCH_SIZE)
+    # train_loader, test_loader = get_fashion_mnist_loaders(BATCH_SIZE)
+    
+    # Initialize smaller model for toy dataset
+    model = VQVAE(
+        num_embeddings=256,  # Reduced from 512
+        embedding_dim=32,    # Reduced from 64
+        backbone_name='resnet18',
+        commitment_cost=0.25
+    )
+    
+    # Training
+    train_vqvae(model, train_loader, NUM_EPOCHS, DEVICE)
+    
+    # Test reconstruction on test set
+    test_images, _ = next(iter(test_loader))
+    reconstructions, codes = inference_step(model, test_images, DEVICE)
+    visualize_results(test_images, reconstructions)
