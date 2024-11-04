@@ -1,6 +1,6 @@
 numpy
 matplotlib
 # just for data
-sklearn
+scikit-learn
 torch
 timm
