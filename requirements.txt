@@ -1,5 +1,6 @@
 numpy
 matplotlib
 # just for data
-sklearn
-**.zip
+scikit-learn
+torch
+timm

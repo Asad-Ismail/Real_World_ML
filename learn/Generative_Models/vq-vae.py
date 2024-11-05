@@ -195,7 +195,8 @@ if __name__ == "__main__":
     NUM_EPOCHS = 10
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-    # Choose dataset (uncomment one)
+    # Choose dataset 
+    print(f"Getting Dataset!!")
     train_loader, test_loader = get_cifar10_loaders(BATCH_SIZE)
     # train_loader, test_loader = get_fashion_mnist_loaders(BATCH_SIZE)
     
