@@ -1,9 +1,7 @@
 import itertools
 from scipy.stats import uniform, loguniform
 
-# define the model
 def my_model(param1, param2, param3):
-    # your model implementation here
     return model_score
 
 # define the hyperparameter space
