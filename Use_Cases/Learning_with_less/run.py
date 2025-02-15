@@ -66,10 +66,17 @@ def create_dataloaders(ds_train, ds_val, batch_size):
     return train_loader, val_loader
 
 def build_model():
-    # Load pretrained ResNet34 and adjust the final layer for regression
+    # Load pretrained ResNet34 and replace its final classification layer with a MLP head for regression
     model = models.resnet34(pretrained=True)
     num_ftrs = model.fc.in_features
-    model.fc = nn.Linear(num_ftrs, 1)  # Output a single value
+    mlp_head = nn.Sequential(
+         nn.Linear(num_ftrs, 256),
+         nn.ReLU(),
+         nn.Linear(256, 64),
+         nn.ReLU(),
+         nn.Linear(64, 1)
+    )
+    model.fc = mlp_head
     return model
 
 def train_one_epoch(model, dataloader, criterion, optimizer, device):
