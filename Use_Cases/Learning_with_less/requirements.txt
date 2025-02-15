@@ -1,0 +1,9 @@
+wandb
+datasets
+torch
+torchvision
+numpy
+matplotlib
+
+
+

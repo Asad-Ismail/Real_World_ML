@@ -73,3 +73,16 @@ For a deeper dive into these concepts, especially semi-supervised techniques, co
 
 - **Semi-Supervised Learning:**  
   Use when you face a moderate amount of labeled data combined with a large amount of unlabeled data. It’s particularly useful when labeling is expensive and there exists a reliable method to propagate labels.
+
+
+## Implemntation
+
+Recent studies ([Semi vs Unsupervised](https://arxiv.org/pdf/2307.08919)) have shown that MixMatch performs remarkably well. [MixMatch](https://arxiv.org/pdf/1905.02249) that incorporates mixup with semi-supervised techniques. Combining selfsupervied pretraining and semi-supervised finetuning also is shown to perform quite well as show in [SelfMatch](https://arxiv.org/pdf/2101.06480) and [CoMatch](https://arxiv.org/pdf/2011.11183). So here we will implement Self supervised pretraining and Semi-supervised finetuning, it is bit different from the original paper of SelfMatch where they use FixMatch for semi-supervised finetuning.
+
+
+
+
+
+
+
+
