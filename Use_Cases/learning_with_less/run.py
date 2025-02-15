@@ -6,14 +6,15 @@ from torch.utils.data import DataLoader
 from torchvision import transforms, models
 from datasets import load_dataset, concatenate_datasets
 import wandb
+from model import nt_xent_loss, mixmatch, semi_supervised_loss, build_model
 from tqdm import tqdm
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Pretrained ResNet34 Age Regression on UTKFace")
     parser.add_argument("--train_pct", type=float, default=20.0, help="Percentage of dataset to use for training (0-100)")
     parser.add_argument("--val_pct", type=float, default=5.0, help="Percentage of dataset to use for validation (0-100)")
-    parser.add_argument("--batch_size", type=int, default=32, help="Batch size for training")
-    parser.add_argument("--epochs", type=int, default=10, help="Number of training epochs")
+    parser.add_argument("--batch_size", type=int, default=16, help="Batch size for training")
+    parser.add_argument("--epochs", type=int, default=30, help="Number of training epochs")
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
     parser.add_argument("--use_wandb", default=False, action="store_true", help="Enable Weights and Biases logging")
     parser.add_argument("--wandb_project", type=str, default="learn_with_less", help="Weights and Biases project name")
@@ -36,8 +37,12 @@ def prepare_dataset(train_pct, val_pct):
     ds_train = ds_full.select(range(num_train))
     ds_val = ds_full.select(range(num_train, num_train + num_val))
 
-    print(f"Using {len(ds_train)} samples for training and {len(ds_val)} samples for validation")
-    return ds_train, ds_val
+    ds_unlabel = ds_full.select(range(num_train + num_val, total_size))
+
+    print(f"Using {len(ds_train)} samples for training, {len(ds_val)} samples for validation and
+          {len(ds_unlabel)} samples for unsupervised learning")
+    
+    return ds_train, ds_val, ds_unlabel
 
 def get_transforms(train=True):
     # For ResNet, we use standard ImageNet statistics
@@ -54,48 +59,97 @@ def transform_example(example, transform):
     # Stack the transformed images into a batch tensor
     images = torch.stack(images)
     # Convert age to a float tensor (vector of size 1) for regression tasks
-    ages = torch.tensor(example["age"],dtype=torch.float32)
+    ages = torch.tensor(example["age"],dtype=torch.float32).unsqueeze(1)
     return {"image": images, "age": ages}
 
-def create_dataloaders(ds_train, ds_val, batch_size):
+def create_dataloaders(ds_train, ds_val, ds_unlabel, batch_size):
     # Get transformations (could later inject augmentation for training)
     transform_train = get_transforms(train=True)
     transform_val = get_transforms(train=False)
     ds_train = ds_train.with_transform(lambda x: transform_example(x, transform_train))
+    ds_unlabel = ds_unlabel.with_transform(lambda x: transform_example(x, transform_train))
     ds_val = ds_val.with_transform(lambda x: transform_example(x, transform_val))
     
     train_loader = DataLoader(ds_train, batch_size=batch_size, shuffle=True)
+    unlabel_loader = DataLoader(ds_unlabel, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(ds_val, batch_size=batch_size, shuffle=False)
-    return train_loader, val_loader
+    return train_loader, unlabel_loader, val_loader
 
-def build_model():
-    # Load pretrained ResNet34 and replace its final classification layer with a MLP head for regression
-    model = models.resnet34(weights=models.ResNet34_Weights.IMAGENET1K_V1)
-    num_ftrs = model.fc.in_features
-    mlp_head = nn.Sequential(
-         nn.Linear(num_ftrs, 256),
-         nn.ReLU(),
-         nn.Linear(256, 64),
-         nn.ReLU(),
-         nn.Linear(64, 1)
+
+def train_self_supervised(model, batch, optimizer, device, temperature,transform):
+    # Get two random augmentations of the same images
+    views = [transform(img) for img in batch["image"]]
+    view1 = torch.stack(views).to(device)
+    views = [transform(img) for img in batch["image"]]
+    view2 = torch.stack(views).to(device)
+    
+    optimizer.zero_grad()
+    z1 = model(view1)
+    z2 = model(view2)
+    
+    loss = nt_xent_loss(z1, z2, temperature)
+    loss.backward()
+    optimizer.step()
+    
+    total_loss += loss.item()
+    
+    return loss.item()
+
+def train_semisupervised(model, supervised_batch, unsupervised_batch, criterion, optimizer, device):
+
+    x_l, y_l = supervised_batch["image"], supervised_batch["age"]
+    u = unsupervised_batch["image"]#
+
+    (labeled_inputs, true_labels), (unlabeled_inputs, guessed_labels) = mixmatch(
+        labeled_batch=(x_l, y_l),
+        unlabeled_batch=u,
+        model=model,
+        augment_fn=your_augmentation_fn,  
+        T=0.5, K=2, alpha=0.75,
+        mode='regression',            
+        device=device
     )
-    model.fc = mlp_head
-    return model
+    # Compute predictions for the processed data
+    output_l = model(labeled_inputs)
+    output_u = model(unlabeled_inputs)
+
+    # Compute the combined loss
+    loss, loss_x, loss_u = semi_supervised_loss(
+        labeled_output=output_l,
+        labeled_target=true_labels,
+        unlabeled_output=output_u,
+        unlabeled_target=guessed_labels,
+        lambda_u=100,
+        criterion=criterion
+    )
+    
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+    return loss.item()
+
+
+def train_supervised(model, batch, criterion, optimizer, device):
+    inputs = batch["image"].to(device)
+    targets = batch["age"].to(device)
+    optimizer.zero_grad()
+    outputs = model(inputs)
+    loss = criterion(outputs, targets)
+    loss.backward()
+    optimizer.step()
+    return loss.item()
+
 
 def train_one_epoch(model, dataloader, criterion, optimizer, device):
     model.train()
     running_loss = 0.0
     for batch in dataloader:
-        inputs = batch["image"].to(device)
-        targets = batch["age"].to(device)
-        optimizer.zero_grad()
-        outputs = model(inputs)
-        loss = criterion(outputs, targets)
-        loss.backward()
-        optimizer.step()
-        running_loss += loss.item() * inputs.size(0)
-    epoch_loss = running_loss / len(dataloader.dataset)
+        loss = train_supervised(model, batch, criterion, optimizer, device)
+        running_loss += loss.item() 
+    epoch_loss = running_loss / len(dataloader)
     return epoch_loss
+
+
 
 def eval_model(model, dataloader, criterion, device):
     model.eval()
@@ -116,10 +170,9 @@ def main():
     # Initialize weights & biases logging if enabled
     if args.use_wandb:
         wandb.init(project=args.wandb_project, config=vars(args))
-    
-    # Prepare dataset and dataloaders
-    ds_train, ds_val = prepare_dataset(args.train_pct, args.val_pct)
-    train_loader, val_loader = create_dataloaders(ds_train, ds_val, args.batch_size)
+
+    ds_train, ds_val, ds_unlabel = prepare_dataset(args.train_pct, args.val_pct)
+    train_loader, unlabel_loader, val_loader = create_dataloaders(ds_train, ds_val, ds_unlabel, args.batch_size)
 
     # Set device and initialize model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
