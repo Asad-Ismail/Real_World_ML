@@ -134,7 +134,7 @@ def main():
         val_loss = eval_model(model, val_loader, criterion, device)
         if val_loss < best_loss:
             best_loss = val_loss
-            torch.save(model.state_dict(), "best_model.pth")
+            torch.save(model.state_dict(), "best_model_pretrained.pth")
 
         print(f"Epoch {epoch}/{args.epochs} -> Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f}")
         if args.use_wandb:
