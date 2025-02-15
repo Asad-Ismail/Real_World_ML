@@ -3,14 +3,14 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from datasets import load_dataset
 from torchvision import transforms, models
+from datasets import load_dataset, concatenate_datasets
 import wandb
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Pretrained ResNet34 Age Regression on UTKFace")
-    parser.add_argument("--train_pct", type=float, default=7.0, help="Percentage of dataset to use for training (0-100)")
-    parser.add_argument("--val_pct", type=float, default=3.0, help="Percentage of dataset to use for validation (0-100)")
+    parser.add_argument("--train_pct", type=float, default=20.0, help="Percentage of dataset to use for training (0-100)")
+    parser.add_argument("--val_pct", type=float, default=5.0, help="Percentage of dataset to use for validation (0-100)")
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size for training")
     parser.add_argument("--epochs", type=int, default=10, help="Number of training epochs")
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
@@ -19,10 +19,11 @@ def parse_args():
     return parser.parse_args()
 
 def prepare_dataset(train_pct, val_pct):
-    # Load the UTKFace dataset from Hugging Face
     dataset = load_dataset("deedax/UTK-Face-Revised")
-    # Assumption: the dataset has a single split named "train"
-    ds_full = dataset["train"]
+    ds_train = dataset["train"]
+    ds_val = dataset["valid"]
+
+    ds_full = concatenate_datasets([ds_train, ds_val])
     total_size = len(ds_full)
     print(f"Total dataset size: {total_size}")
 
