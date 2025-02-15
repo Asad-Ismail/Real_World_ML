@@ -6,9 +6,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms, models
 from datasets import load_dataset, concatenate_datasets
 import wandb
-import numpy as np
-from PIL import Image
-
+from tqdm import tqdm
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Pretrained ResNet34 Age Regression on UTKFace")
@@ -130,7 +128,7 @@ def main():
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
     # Training loop
-    for epoch in range(1, args.epochs + 1):
+    for epoch in tqdm(range(1, args.epochs + 1), desc="Training",total=args.epochs):
         train_loss = train_one_epoch(model, train_loader, criterion, optimizer, device)
         val_loss = eval_model(model, val_loader, criterion, device)
 
