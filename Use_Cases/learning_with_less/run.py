@@ -6,6 +6,9 @@ from torch.utils.data import DataLoader
 from torchvision import transforms, models
 from datasets import load_dataset, concatenate_datasets
 import wandb
+import numpy as np
+from PIL import Image
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Pretrained ResNet34 Age Regression on UTKFace")
@@ -49,16 +52,17 @@ def get_transforms(train=True):
 
 def transform_example(example, transform):
     # Apply the transformation to the image
-    example["image"] = transform(example["image"])
+    images = [transform(img) for img in example["image"]]
+    # Stack the transformed images into a batch tensor
+    images = torch.stack(images)
     # Convert age to a float tensor (vector of size 1) for regression tasks
-    example["age"] = torch.tensor([float(example["age"])])
-    return example
+    ages = torch.tensor(example["age"],dtype=torch.float32)
+    return {"image": images, "age": ages}
 
 def create_dataloaders(ds_train, ds_val, batch_size):
     # Get transformations (could later inject augmentation for training)
     transform_train = get_transforms(train=True)
     transform_val = get_transforms(train=False)
-    # Set per-example transforms using dataset's with_transform method
     ds_train = ds_train.with_transform(lambda x: transform_example(x, transform_train))
     ds_val = ds_val.with_transform(lambda x: transform_example(x, transform_val))
     
@@ -68,7 +72,7 @@ def create_dataloaders(ds_train, ds_val, batch_size):
 
 def build_model():
     # Load pretrained ResNet34 and replace its final classification layer with a MLP head for regression
-    model = models.resnet34(pretrained=True,weights=models.ResNet34_Weights.IMAGENET1K_V1)
+    model = models.resnet34(weights=models.ResNet34_Weights.IMAGENET1K_V1)
     num_ftrs = model.fc.in_features
     mlp_head = nn.Sequential(
          nn.Linear(num_ftrs, 256),
