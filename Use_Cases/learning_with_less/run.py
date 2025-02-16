@@ -93,7 +93,7 @@ def collate_supervised(batch):
     """
     collated = {
         "image": torch.stack([item["image"] for item in batch]),
-        "original_image": [img for item in batch for img in item["original_image"]],
+        "original_image": [sample["original_image"] for sample in batch],
         "age": torch.stack([item["age"] for item in batch])
     }
     return collated
@@ -103,7 +103,7 @@ def collate_unsupervised(batch):
     Collate function for unsupervised data that preserves original images
     """
     collated = {
-        "image": [img for sample in batch for img in sample["image"]]
+        "image": [sample["image"] for sample in batch]
     }
     return collated
 
@@ -121,7 +121,7 @@ def create_dataloaders(ds_train, ds_val, ds_unlabel, batch_size):
     train_loader = DataLoader(ds_train, batch_size=batch_size, shuffle=True,collate_fn=collate_supervised)
     unlabel_loader = DataLoader(ds_unlabel, batch_size=batch_size, shuffle=True, collate_fn=collate_unsupervised)
     val_loader = DataLoader(ds_val, batch_size=batch_size, shuffle=False,collate_fn=collate_supervised)
-    
+
     return train_loader, unlabel_loader, val_loader, augment_transform
 
 
@@ -151,8 +151,6 @@ def train_self_supervised(model, dataloader, optimizer, device, temperature,tran
 def train_semisupervised(model, train_loader, unlabel_loader, criterion, optimizer, device, args, augment_transform):
     model.train()
     total_loss = 0.0
-    
-    # Create iterator for labeled data
     train_iter = iter(train_loader)
     
     # Iterate over unlabeled data since it's larger
@@ -164,7 +162,8 @@ def train_semisupervised(model, train_loader, unlabel_loader, criterion, optimiz
             train_iter = iter(train_loader)
             labeled_batch = next(train_iter)
             
-        x_l, y_l = labeled_batch["image"].to(device), labeled_batch["age"].to(device)
+        # Collecting Pil images here because the augment_transform expects a PIL image
+        x_l, y_l = labeled_batch["original_image"].to(device), labeled_batch["age"].to(device)
         u = unlabel_batch["image"]
 
         (labeled_inputs, true_labels), (unlabeled_inputs, guessed_labels) = mixmatch(

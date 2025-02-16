@@ -105,27 +105,7 @@ def apply_augmentations(x, num_augmentations=1, augment_fn=None):
         else:
             return [x for _ in range(num_augmentations)]
     else:
-        if num_augmentations == 1 and isinstance(x, torch.Tensor):
-            mean = torch.tensor([0.485, 0.456, 0.406], device=x.device)
-            std = torch.tensor([0.229, 0.224, 0.225], device=x.device)
-            # Check if x is a batched tensor (i.e. has 4 dimensions: [B, C, H, W])
-            if x.ndim == 4:
-                augmented_images = []
-                for img in x:
-                    # Reverse normalization per image.
-                    img = img * std[:, None, None] + mean[:, None, None]
-                    # Clamp the values to ensure they're in the valid range [0, 1]
-                    img = torch.clamp(img, 0, 1)
-                    # Convert the unnormalized tensor to a PIL image
-                    pil_img = to_pil_image(img)
-                    # Apply the augmentation (which expects a PIL image)
-                    augmented = augment_fn(pil_img)
-                    augmented_images.append(augmented)
-                # Return the list of augmented images
-                return augmented_images
-
-            return augment_fn(x)
-        elif isinstance(x, list):
+        if num_augmentations == 1 and isinstance(x, list):
             # this has to happen for k augmentations
             augmented_list = [torch.stack([augment_fn(i) for i in x]) for _ in range(num_augmentations) ]
             return augmented_list
@@ -163,8 +143,7 @@ def mixmatch(labeled_batch, unlabeled_batch, model, augment_fn=None, T=0.5, K=2,
     y_l = y_l.to(device)
     
     # Augment labeled data once
-    x_l_aug = x_l
-    #x_l_aug = apply_augmentations(x_l, num_augmentations=1, augment_fn=augment_fn)
+    x_l_aug = apply_augmentations(x_l, num_augmentations=1, augment_fn=augment_fn)
     
     # Process unlabeled data: apply K augmentations
     #u = unlabeled_batch.to(device)
