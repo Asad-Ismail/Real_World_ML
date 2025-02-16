@@ -19,7 +19,7 @@ def parse_args():
     parser.add_argument("--use_wandb", default=False, action="store_true", help="Enable Weights and Biases logging")
     parser.add_argument("--wandb_project", type=str, default="learn_with_less", help="Weights and Biases project name")
 
-    parser.add_argument("--mode", type=str, default="self_supervised", 
+    parser.add_argument("--mode", type=str, default="semi_supervised", 
                       choices=["supervised", "self_supervised", "semi_supervised"],
                       help="Training mode")
     parser.add_argument("--temperature", type=float, default=0.5, 
@@ -194,8 +194,6 @@ def train_one_epoch(model, dataloader, criterion, optimizer, device, args, trans
     for batch in dataloader:
         if args.mode == "supervised":
             loss = train_supervised(model, batch, criterion, optimizer, device)
-        elif args.mode == "self_supervised":
-            loss = train_self_supervised(model, batch, optimizer, device, args.temperature,transform)
         else:
             raise ValueError(f"Invalid mode: {args.mode}")
         running_loss += loss.item() 
@@ -243,8 +241,8 @@ def main():
     for epoch in tqdm(range(1, args.epochs + 1), desc="Training",total=args.epochs):
         if args.mode == "self_supervised":
             train_loss = train_self_supervised(model, unlabel_loader, optimizer, device, args.temperature, augment_transform)
-        elif args.mode == "supervised":
-            train_loss = train_one_epoch(model, train_loader, criterion, optimizer, device, args, augment_transform)
+        elif args.mode == "semi_supervised":
+            train_loss = train_semisupervised(model, train_loader, unlabel_loader, criterion, optimizer, device, args, augment_transform)
         else:
             train_loss = train_one_epoch(model, unlabel_loader, criterion, optimizer, device, args, augment_transform)
 
