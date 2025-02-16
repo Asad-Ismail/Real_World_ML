@@ -145,7 +145,7 @@ def train_semisupervised(model, train_loader, unlabel_loader, criterion, optimiz
             
         x_l, y_l = labeled_batch["image"].to(device), labeled_batch["age"].to(device)
         u = unlabel_batch["image"]
-        
+
         (labeled_inputs, true_labels), (unlabeled_inputs, guessed_labels) = mixmatch(
             labeled_batch=(x_l, y_l),
             unlabeled_batch=u,
@@ -167,7 +167,6 @@ def train_semisupervised(model, train_loader, unlabel_loader, criterion, optimiz
             lambda_u=args.lambda_u,
             criterion=criterion
         )
-        
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -244,7 +243,7 @@ def main():
         elif args.mode == "semi_supervised":
             train_loss = train_semisupervised(model, train_loader, unlabel_loader, criterion, optimizer, device, args, augment_transform)
         else:
-            train_loss = train_one_epoch(model, unlabel_loader, criterion, optimizer, device, args, augment_transform)
+            train_loss = train_one_epoch(model, train_loader, criterion, optimizer, device, args, augment_transform)
 
         if args.mode != "self_supervised":
             val_loss = eval_model(model, val_loader, criterion, device)
