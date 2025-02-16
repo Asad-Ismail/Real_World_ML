@@ -77,17 +77,37 @@ def get_transforms(train=True):
 
 def transform_supervised(example, transform):
     # Apply the transformation to the image
+    original_images = example["image"]
     images = [transform(img) for img in example["image"]]
     # Stack the transformed images into a batch tensor
     images = torch.stack(images)
     # Convert age to a float tensor (vector of size 1) for regression tasks
     ages = torch.tensor(example["age"],dtype=torch.float32).unsqueeze(1)
-    return {"image": images, "age": ages}
+    return {"image": images, "age": ages, "original_image": original_images}
+
+
+
+def collate_supervised(batch):
+    """
+    Collate function for supervised data that handles both transformed and original images
+    """
+    collated = {
+        "image": torch.stack([item["image"] for item in batch]),
+        "original_image": [img for item in batch for img in item["original_image"]],
+        "age": torch.stack([item["age"] for item in batch])
+    }
+    return collated
 
 def collate_unsupervised(batch):
-    collated = {}
-    collated["image"] = [sample["image"] for sample in batch]
+    """
+    Collate function for unsupervised data that preserves original images
+    """
+    collated = {
+        "image": [img for sample in batch for img in sample["image"]]
+    }
     return collated
+
+
 
 def create_dataloaders(ds_train, ds_val, ds_unlabel, batch_size):
     # Get transformations (could later inject augmentation for training)
@@ -98,9 +118,10 @@ def create_dataloaders(ds_train, ds_val, ds_unlabel, batch_size):
     ds_val = ds_val.with_transform(lambda x: transform_supervised(x, transform_val))
 
 
-    train_loader = DataLoader(ds_train, batch_size=batch_size, shuffle=True)
+    train_loader = DataLoader(ds_train, batch_size=batch_size, shuffle=True,collate_fn=collate_supervised)
     unlabel_loader = DataLoader(ds_unlabel, batch_size=batch_size, shuffle=True, collate_fn=collate_unsupervised)
-    val_loader = DataLoader(ds_val, batch_size=batch_size, shuffle=False)
+    val_loader = DataLoader(ds_val, batch_size=batch_size, shuffle=False,collate_fn=collate_supervised)
+    
     return train_loader, unlabel_loader, val_loader, augment_transform
 
 
