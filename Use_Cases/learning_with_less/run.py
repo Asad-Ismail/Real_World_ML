@@ -108,7 +108,7 @@ def train_self_supervised(model, dataloader, optimizer, device, temperature,tran
     model.train()
     running_loss = 0.0
 
-    for batch in dataloader:
+    for batch in tqdm(dataloader, desc="Training Self-Supervised", total=len(dataloader)):
         # Get two random augmentations of the same images
         views = [transform(img) for img in batch["image"]]
         view1 = torch.stack(views).to(device)
@@ -135,7 +135,7 @@ def train_semisupervised(model, train_loader, unlabel_loader, criterion, optimiz
     train_iter = iter(train_loader)
     
     # Iterate over unlabeled data since it's larger
-    for unlabel_batch in unlabel_loader:
+    for unlabel_batch in tqdm(unlabel_loader, desc="Training Semi-Supervised", total=len(unlabel_loader)):
         # Get next labeled batch, restart if needed
         try:
             labeled_batch = next(train_iter)
