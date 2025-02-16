@@ -144,7 +144,7 @@ def train_semisupervised(model, train_loader, unlabel_loader, criterion, optimiz
             labeled_batch = next(train_iter)
             
         x_l, y_l = labeled_batch["image"].to(device), labeled_batch["age"].to(device)
-        u = unlabel_batch["image"].to(device)
+        u = unlabel_batch["image"]
         
         (labeled_inputs, true_labels), (unlabeled_inputs, guessed_labels) = mixmatch(
             labeled_batch=(x_l, y_l),

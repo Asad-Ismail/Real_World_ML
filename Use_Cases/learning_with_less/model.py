@@ -3,6 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch
 import numpy as np
+from torchvision.transforms.functional import to_pil_image
+
 
 
 class ProjectionHead(nn.Module):
@@ -103,8 +105,30 @@ def apply_augmentations(x, num_augmentations=1, augment_fn=None):
         else:
             return [x for _ in range(num_augmentations)]
     else:
-        if num_augmentations == 1:
+        if num_augmentations == 1 and isinstance(x, torch.Tensor):
+            mean = torch.tensor([0.485, 0.456, 0.406], device=x.device)
+            std = torch.tensor([0.229, 0.224, 0.225], device=x.device)
+            # Check if x is a batched tensor (i.e. has 4 dimensions: [B, C, H, W])
+            if x.ndim == 4:
+                augmented_images = []
+                for img in x:
+                    # Reverse normalization per image.
+                    img = img * std[:, None, None] + mean[:, None, None]
+                    # Clamp the values to ensure they're in the valid range [0, 1]
+                    img = torch.clamp(img, 0, 1)
+                    # Convert the unnormalized tensor to a PIL image
+                    pil_img = to_pil_image(img)
+                    # Apply the augmentation (which expects a PIL image)
+                    augmented = augment_fn(pil_img)
+                    augmented_images.append(augmented)
+                # Return the list of augmented images
+                return augmented_images
+
             return augment_fn(x)
+        elif isinstance(x, list):
+            # this has to happen for k augmentations
+            augmented_list = [torch.stack([augment_fn(i) for i in x]) for _ in range(num_augmentations) ]
+            return augmented_list
         else:
             return [augment_fn(x) for _ in range(num_augmentations)]
 
@@ -139,10 +163,12 @@ def mixmatch(labeled_batch, unlabeled_batch, model, augment_fn=None, T=0.5, K=2,
     y_l = y_l.to(device)
     
     # Augment labeled data once
-    x_l_aug = apply_augmentations(x_l, num_augmentations=1, augment_fn=augment_fn)
+    x_l_aug = x_l
+    #x_l_aug = apply_augmentations(x_l, num_augmentations=1, augment_fn=augment_fn)
     
     # Process unlabeled data: apply K augmentations
-    u = unlabeled_batch.to(device)
+    #u = unlabeled_batch.to(device)
+    u = unlabeled_batch
     u_aug_list = apply_augmentations(u, num_augmentations=K, augment_fn=augment_fn)
     
     # Compute predictions for each augmented copy and average them over K augmentations
@@ -151,8 +177,6 @@ def mixmatch(labeled_batch, unlabeled_batch, model, augment_fn=None, T=0.5, K=2,
         u_aug = u_aug_list[k]
         with torch.no_grad():
             preds = model(u_aug)
-            if mode == 'classification':
-                preds = torch.softmax(preds, dim=1)
             predictions.append(preds)
     preds_stack = torch.stack(predictions, dim=0)
     preds_avg = torch.mean(preds_stack, dim=0)
@@ -221,7 +245,7 @@ def semi_supervised_loss(labeled_output, labeled_target, unlabeled_output, unlab
 def nt_xent_loss(z1, z2, temperature=0.5):
     """Normalized Temperature-scaled Cross Entropy Loss from SimCLR paper"""
     batch_size = z1.shape[0]
-    
+
     # Concatenate representations for all pairs
     representations = torch.cat([z1, z2], dim=0)
     similarity_matrix = F.cosine_similarity(representations.unsqueeze(1), 
