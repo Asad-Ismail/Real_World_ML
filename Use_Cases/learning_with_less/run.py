@@ -18,6 +18,15 @@ def parse_args():
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
     parser.add_argument("--use_wandb", default=False, action="store_true", help="Enable Weights and Biases logging")
     parser.add_argument("--wandb_project", type=str, default="learn_with_less", help="Weights and Biases project name")
+
+    parser.add_argument("--mode", type=str, default="self_supervised", 
+                      choices=["supervised", "self_supervised", "semi_supervised"],
+                      help="Training mode")
+    parser.add_argument("--temperature", type=float, default=0.5, 
+                      help="Temperature for contrastive loss")
+    parser.add_argument("--lambda_u", type=float, default=100.0, 
+                      help="Weight for unsupervised loss in semi-supervised learning")
+    
     return parser.parse_args()
 
 def prepare_dataset(train_pct, val_pct):
@@ -39,21 +48,34 @@ def prepare_dataset(train_pct, val_pct):
 
     ds_unlabel = ds_full.select(range(num_train + num_val, total_size))
 
-    print(f"Using {len(ds_train)} samples for training, {len(ds_val)} samples for validation and
-          {len(ds_unlabel)} samples for unsupervised learning")
+    print(f"Using {len(ds_train)} samples for training, {len(ds_val)} samples for validation and {len(ds_unlabel)} samples for unsupervised learning")
     
     return ds_train, ds_val, ds_unlabel
 
 def get_transforms(train=True):
-    # For ResNet, we use standard ImageNet statistics
-    return transforms.Compose([
+    """Returns two types of transforms: basic and augmented"""
+    basic_transform = transforms.Compose([
         transforms.Resize((224, 224)),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                             std=[0.229, 0.224, 0.225])
+                           std=[0.229, 0.224, 0.225])
     ])
+    
+    if train:
+        augment_transform = transforms.Compose([
+            transforms.RandomResizedCrop(224, scale=(0.8, 1.0)),
+            transforms.RandomHorizontalFlip(),
+            transforms.ColorJitter(0.4, 0.4, 0.4, 0.1),
+            transforms.RandomGrayscale(p=0.2),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                               std=[0.229, 0.224, 0.225])
+        ])
+        return basic_transform, augment_transform
+    return basic_transform, None
 
-def transform_example(example, transform):
+
+def transform_supervised(example, transform):
     # Apply the transformation to the image
     images = [transform(img) for img in example["image"]]
     # Stack the transformed images into a batch tensor
@@ -62,71 +84,97 @@ def transform_example(example, transform):
     ages = torch.tensor(example["age"],dtype=torch.float32).unsqueeze(1)
     return {"image": images, "age": ages}
 
+def collate_unsupervised(batch):
+    collated = {}
+    collated["image"] = [sample["image"] for sample in batch]
+    return collated
+
 def create_dataloaders(ds_train, ds_val, ds_unlabel, batch_size):
     # Get transformations (could later inject augmentation for training)
-    transform_train = get_transforms(train=True)
-    transform_val = get_transforms(train=False)
-    ds_train = ds_train.with_transform(lambda x: transform_example(x, transform_train))
-    ds_unlabel = ds_unlabel.with_transform(lambda x: transform_example(x, transform_train))
-    ds_val = ds_val.with_transform(lambda x: transform_example(x, transform_val))
-    
+    transform_train, augment_transform = get_transforms(train=True)
+    transform_val, _ = get_transforms(train=False)
+
+    ds_train = ds_train.with_transform(lambda x: transform_supervised(x, transform_train))
+    ds_val = ds_val.with_transform(lambda x: transform_supervised(x, transform_val))
+
+
     train_loader = DataLoader(ds_train, batch_size=batch_size, shuffle=True)
-    unlabel_loader = DataLoader(ds_unlabel, batch_size=batch_size, shuffle=True)
+    unlabel_loader = DataLoader(ds_unlabel, batch_size=batch_size, shuffle=True, collate_fn=collate_unsupervised)
     val_loader = DataLoader(ds_val, batch_size=batch_size, shuffle=False)
-    return train_loader, unlabel_loader, val_loader
+    return train_loader, unlabel_loader, val_loader, augment_transform
 
 
-def train_self_supervised(model, batch, optimizer, device, temperature,transform):
-    # Get two random augmentations of the same images
-    views = [transform(img) for img in batch["image"]]
-    view1 = torch.stack(views).to(device)
-    views = [transform(img) for img in batch["image"]]
-    view2 = torch.stack(views).to(device)
+def train_self_supervised(model, dataloader, optimizer, device, temperature,transform):
+    model.train()
+    running_loss = 0.0
+
+    for batch in dataloader:
+        # Get two random augmentations of the same images
+        views = [transform(img) for img in batch["image"]]
+        view1 = torch.stack(views).to(device)
+        views = [transform(img) for img in batch["image"]]
+        view2 = torch.stack(views).to(device)
+        
+        optimizer.zero_grad()
+        z1 = model(view1)
+        z2 = model(view2)
+        
+        loss = nt_xent_loss(z1, z2, temperature)
+        loss.backward()
+        optimizer.step()
+        
+        running_loss += loss.item()
     
-    optimizer.zero_grad()
-    z1 = model(view1)
-    z2 = model(view2)
-    
-    loss = nt_xent_loss(z1, z2, temperature)
-    loss.backward()
-    optimizer.step()
-    
-    total_loss += loss.item()
-    
-    return loss.item()
+    return running_loss / len(dataloader)
 
-def train_semisupervised(model, supervised_batch, unsupervised_batch, criterion, optimizer, device):
-
-    x_l, y_l = supervised_batch["image"], supervised_batch["age"]
-    u = unsupervised_batch["image"]#
-
-    (labeled_inputs, true_labels), (unlabeled_inputs, guessed_labels) = mixmatch(
-        labeled_batch=(x_l, y_l),
-        unlabeled_batch=u,
-        model=model,
-        augment_fn=your_augmentation_fn,  
-        T=0.5, K=2, alpha=0.75,
-        mode='regression',            
-        device=device
-    )
-    # Compute predictions for the processed data
-    output_l = model(labeled_inputs)
-    output_u = model(unlabeled_inputs)
-
-    # Compute the combined loss
-    loss, loss_x, loss_u = semi_supervised_loss(
-        labeled_output=output_l,
-        labeled_target=true_labels,
-        unlabeled_output=output_u,
-        unlabeled_target=guessed_labels,
-        lambda_u=100,
-        criterion=criterion
-    )
+def train_semisupervised(model, train_loader, unlabel_loader, criterion, optimizer, device, args, augment_transform):
+    model.train()
+    total_loss = 0.0
     
-    optimizer.zero_grad()
-    loss.backward()
-    optimizer.step()
-    return loss.item()
+    # Create iterator for labeled data
+    train_iter = iter(train_loader)
+    
+    # Iterate over unlabeled data since it's larger
+    for unlabel_batch in unlabel_loader:
+        # Get next labeled batch, restart if needed
+        try:
+            labeled_batch = next(train_iter)
+        except StopIteration:
+            train_iter = iter(train_loader)
+            labeled_batch = next(train_iter)
+            
+        x_l, y_l = labeled_batch["image"].to(device), labeled_batch["age"].to(device)
+        u = unlabel_batch["image"].to(device)
+        
+        (labeled_inputs, true_labels), (unlabeled_inputs, guessed_labels) = mixmatch(
+            labeled_batch=(x_l, y_l),
+            unlabeled_batch=u,
+            model=model,
+            augment_fn=augment_transform,
+            T=0.5, K=2, alpha=0.75,
+            mode='regression',
+            device=device
+        )
+        
+        output_l = model(labeled_inputs)
+        output_u = model(unlabeled_inputs)
+        
+        loss, loss_x, loss_u = semi_supervised_loss(
+            labeled_output=output_l,
+            labeled_target=true_labels,
+            unlabeled_output=output_u,
+            unlabeled_target=guessed_labels,
+            lambda_u=args.lambda_u,
+            criterion=criterion
+        )
+        
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        
+        total_loss += loss.item()
+        
+    return total_loss / len(unlabel_loader)  # Note: now using unlabel_loader length
 
 
 def train_supervised(model, batch, criterion, optimizer, device):
@@ -140,11 +188,16 @@ def train_supervised(model, batch, criterion, optimizer, device):
     return loss.item()
 
 
-def train_one_epoch(model, dataloader, criterion, optimizer, device):
+def train_one_epoch(model, dataloader, criterion, optimizer, device, args, transform):
     model.train()
     running_loss = 0.0
     for batch in dataloader:
-        loss = train_supervised(model, batch, criterion, optimizer, device)
+        if args.mode == "supervised":
+            loss = train_supervised(model, batch, criterion, optimizer, device)
+        elif args.mode == "self_supervised":
+            loss = train_self_supervised(model, batch, optimizer, device, args.temperature,transform)
+        else:
+            raise ValueError(f"Invalid mode: {args.mode}")
         running_loss += loss.item() 
     epoch_loss = running_loss / len(dataloader)
     return epoch_loss
@@ -172,22 +225,37 @@ def main():
         wandb.init(project=args.wandb_project, config=vars(args))
 
     ds_train, ds_val, ds_unlabel = prepare_dataset(args.train_pct, args.val_pct)
-    train_loader, unlabel_loader, val_loader = create_dataloaders(ds_train, ds_val, ds_unlabel, args.batch_size)
+    train_loader, unlabel_loader, val_loader, augment_transform = create_dataloaders(ds_train, ds_val, ds_unlabel, args.batch_size)
 
     # Set device and initialize model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = build_model().to(device)
+    
+    if args.mode == "self_supervised":
+        model = build_model(self_supervised=True).to(device)
+    else:
+        model = build_model(self_supervised=False).to(device)
+
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     best_loss = float('inf')
 
     # Training loop
     for epoch in tqdm(range(1, args.epochs + 1), desc="Training",total=args.epochs):
-        train_loss = train_one_epoch(model, train_loader, criterion, optimizer, device)
-        val_loss = eval_model(model, val_loader, criterion, device)
-        if val_loss < best_loss:
-            best_loss = val_loss
-            torch.save(model.state_dict(), "best_model_pretrained.pth")
+        if args.mode == "self_supervised":
+            train_loss = train_self_supervised(model, unlabel_loader, optimizer, device, args.temperature, augment_transform)
+        elif args.mode == "supervised":
+            train_loss = train_one_epoch(model, train_loader, criterion, optimizer, device, args, augment_transform)
+        else:
+            train_loss = train_one_epoch(model, unlabel_loader, criterion, optimizer, device, args, augment_transform)
+
+        if args.mode != "self_supervised":
+            val_loss = eval_model(model, val_loader, criterion, device)
+            if val_loss < best_loss:    
+                best_loss = val_loss
+                torch.save(model.state_dict(), "best_model_pretrained.pth")
+        else:
+            # For self-supervised, we cant evaluate the model on the validation set so we use the train loss as the validation loss
+            val_loss = train_loss
 
         print(f"Epoch {epoch}/{args.epochs} -> Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f}")
         if args.use_wandb:

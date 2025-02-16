@@ -5,7 +5,6 @@ import torch
 import numpy as np
 
 
-
 class ProjectionHead(nn.Module):
     def __init__(self, input_dim=512):
         super().__init__()
@@ -32,7 +31,7 @@ class SimCLRModel(nn.Module):
     def forward(self, x):
         h = self.encoder(x)
         z = self.projection_head(h)
-        return F.normalize(z, dim=1)  # Normalize
+        return F.normalize(z, dim=1)  
     
 
 def sharpen(p, T=0.5):
@@ -134,8 +133,6 @@ def mixmatch(labeled_batch, unlabeled_batch, model, augment_fn=None, T=0.5, K=2,
     Returns:
         Tuple: Processed labeled batch (mixed_x_l, mixed_y_l) and processed unlabeled batch (mixed_u, mixed_q).
     """
-    # set model to evaluation mode for predictions
-    model.eval()
     # Unpack and send labeled data to device
     x_l, y_l = labeled_batch
     x_l = x_l.to(device)
@@ -159,8 +156,7 @@ def mixmatch(labeled_batch, unlabeled_batch, model, augment_fn=None, T=0.5, K=2,
             predictions.append(preds)
     preds_stack = torch.stack(predictions, dim=0)
     preds_avg = torch.mean(preds_stack, dim=0)
-    # set model to training mode for backpropagation
-    model.train()
+
     # For classification, sharpen the averaged predictions; for regression, use the average directly.
     if mode == 'classification':
         guessed_labels = sharpen(preds_avg, T)
@@ -225,8 +221,6 @@ def semi_supervised_loss(labeled_output, labeled_target, unlabeled_output, unlab
 def nt_xent_loss(z1, z2, temperature=0.5):
     """Normalized Temperature-scaled Cross Entropy Loss from SimCLR paper"""
     batch_size = z1.shape[0]
-    z1 = F.normalize(z1, dim=1)
-    z2 = F.normalize(z2, dim=1)
     
     # Concatenate representations for all pairs
     representations = torch.cat([z1, z2], dim=0)
