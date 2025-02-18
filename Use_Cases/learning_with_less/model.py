@@ -25,6 +25,7 @@ class SimCLRModel(nn.Module):
         self.encoder = base_encoder
         # Remove the final fc layer
         self.encoder.fc = nn.Identity()
+        self.encoder.fc.in_features = input_dim
         # Add projection head
         self.projection_head = ProjectionHead(input_dim=input_dim)  
 
@@ -92,6 +93,23 @@ def compute_pairwise_distances(labels):
     
     return probabilities
 
+'''
+def compute_pairwise_distances(labels, k=5):
+    diff = labels.unsqueeze(1) - labels.unsqueeze(0)
+    distances = torch.sum(diff ** 2, dim=2)
+    
+    # Compute local sigma for each point based on k-nearest neighbors
+    k = min(k, labels.size(0) - 1)
+    local_distances, _ = torch.topk(distances, k + 1, largest=False)
+    local_sigma = local_distances[:, k].unsqueeze(1)  # Use k-th nearest neighbor
+    
+    probabilities = torch.exp(-distances / (2 * local_sigma ** 2))
+    mask = 1 - torch.eye(labels.size(0), device=labels.device)
+    probabilities = probabilities * mask
+    probabilities = probabilities / probabilities.sum(dim=1, keepdim=True)
+    
+    return probabilities
+'''
 def cmixup_data(x1, y1, x2, y2, alpha=0.75, device='cuda'):
     """
     Applies C-Mixup to a pair of examples.
@@ -100,7 +118,7 @@ def cmixup_data(x1, y1, x2, y2, alpha=0.75, device='cuda'):
         lam = np.random.beta(alpha, alpha)
     else:
         lam = 1.0
-    lam = max(lam, 1 - lam)  # Ensure x' is closer to x1
+    #lam = max(lam, 1 - lam)  # Ensure x' is closer to x1
     lam = torch.tensor(lam).to(device)
     
     mixed_x = lam * x1 + (1 - lam) * x2
@@ -132,7 +150,7 @@ def mixup_data(x1, y1, x2, y2, alpha=0.75, device='cuda'):
         lam = np.random.beta(alpha, alpha)
     else:
         lam = 1.0
-    lam = max(lam, 1 - lam)  # Enforce that x' is closer to x1
+    #lam = max(lam, 1 - lam)  # Enforce that x' is closer to x1
     lam = torch.tensor(lam).to(device)
     mixed_x = lam * x1 + (1 - lam) * x2
     mixed_y = lam * y1 + (1 - lam) * y2
@@ -222,6 +240,8 @@ def cmixmatch(labeled_batch, unlabeled_batch, model, augment_fn=None, T=0.5, K=2
                                   alpha=alpha, device=device)
     
     return (mixed_x_l, mixed_y_l), (mixed_u, mixed_q)
+    
+    #return (x_l_aug[0], y_l), (u_aug_list[0],guessed_labels)
 
 
 def mixmatch(labeled_batch, unlabeled_batch, model, augment_fn=None, T=0.5, K=2, alpha=0.75, mode='classification', device='cuda'):
@@ -272,7 +292,7 @@ def mixmatch(labeled_batch, unlabeled_batch, model, augment_fn=None, T=0.5, K=2,
         x_l_aug[0], y_l,
         shuffled_inputs[:n_labeled],
         shuffled_targets[:n_labeled],
-        alpha=alpha, mode=mode, device=device
+        alpha=alpha, device=device
     )
     
     # MixUp unlabeled data with remaining shuffled data
@@ -280,7 +300,7 @@ def mixmatch(labeled_batch, unlabeled_batch, model, augment_fn=None, T=0.5, K=2,
         u_mix, guessed_labels,
         shuffled_inputs[n_labeled:],
         shuffled_targets[n_labeled:],
-        alpha=alpha, mode=mode, device=device
+        alpha=alpha, device=device
     )
     
     return (mixed_x_l, mixed_y_l), (mixed_u, mixed_q)
@@ -347,7 +367,10 @@ def build_model(model=None,self_supervised=False):
     if model is None:
         model = models.resnet34(weights=models.ResNet34_Weights.IMAGENET1K_V1)
         #model = models.resnet34(weights=None)
-    num_ftrs = model.fc.in_features
+    if hasattr(model, 'fc'):
+        num_ftrs = model.fc.in_features
+    else:  
+        num_ftrs = model.encoder.fc.in_features
     if self_supervised:
         model = SimCLRModel(model,input_dim=num_ftrs)
     else :
@@ -359,6 +382,11 @@ def build_model(model=None,self_supervised=False):
             nn.ReLU(),
             nn.Linear(64, 1)
         )
-        model.fc = mlp_head
-
+        if hasattr(model, 'fc'):
+            model.fc = mlp_head
+        elif hasattr(model, 'projection_head'):  
+            model.projection_head = mlp_head 
+        else:
+            raise AttributeError("Model must have either 'fc' or 'projection_head' attribute")
+    
     return model
