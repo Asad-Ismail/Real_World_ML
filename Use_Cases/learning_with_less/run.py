@@ -291,7 +291,7 @@ def main():
         
         # Restore original args for semi-supervised phase
         args.mode = original_mode
-        args.epochs = 2
+        args.epochs = original_epochs
         
         criterion = nn.MSELoss()
         optimizer = optim.Adam(semi_supervised_model.parameters(), lr=args.lr)
