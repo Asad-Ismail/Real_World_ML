@@ -80,6 +80,62 @@ For a deeper dive into these concepts, especially semi-supervised techniques, co
 Recent studies ([Semi vs Unsupervised](https://arxiv.org/pdf/2307.08919)) have shown that MixMatch performs remarkably well. [MixMatch](https://arxiv.org/pdf/1905.02249) that incorporates mixup with semi-supervised techniques. Combining selfsupervied pretraining and semi-supervised finetuning also is shown to perform quite well as show in [SelfMatch](https://arxiv.org/pdf/2101.06480) and [CoMatch](https://arxiv.org/pdf/2011.11183). So here we will implement Self supervised pretraining and Semi-supervised finetuning, it is bit different from the original paper of SelfMatch where they use FixMatch for semi-supervised finetuning.
 
 
+## Results: Age Prediction from Facial Images
+
+### Dataset Statistics
+
+| Split | Number of Images | 
+|-------|-----------------|
+| Total Dataset | 8,469 | 
+| Training (Labeled) | 423 |
+| Validation | 254 |
+| Unlabeled | 7,792(For semisupervised and self supervised) |
+
+### Performance Comparison (RMSE)
+
+| Training Approach | Validation RMSE | Improvement |
+|------------------|-----------------|-------------|
+| Training from Scratch | 272.00 | Baseline |
+| ImageNet Pretrained (Supervised) | 94.57 | -65.23% |
+| ImageNet Pretrained + Semi-supervised | 79.56 | -70.75% |
+| Self-supervised + Semi-supervised | 119.00 | -56.25% |
+
+### Key Findings
+ 
+1. **Pretrained Model is Crucial**: 
+  - Despite the domain difference between ImageNet and facial images, using pretrained weights dramatically improved performance (65% reduction in error)
+
+2. **Semi-supervised Advantage**: 
+  - Adding semi-supervised learning to ImageNet pretraining further reduced error by ~16%
+  - Best performance achieved by combining ImageNet weights with semi-supervised learning
+
+2. **Limited Self-supervised Success**: 
+  - Self-supervised + semi-supervised approach, while better than training from scratch, couldn't outperform ImageNet pretraining
+  - This is likely due to:
+    - Limited dataset size (8K images vs ImageNet's 1M+ images)
+    - Insufficient data for effective self-supervised representation learning
+
+3. **Semi-supervised Advantage**: 
+  - Adding semi-supervised learning to ImageNet pretraining further reduced error by ~16%
+  - Best performance achieved by combining ImageNet weights with semi-supervised learning
+
+### Recommendations
+
+1. **Start with Pretrained Models**:
+  - Even for domain-specific tasks, ImageNet weights provide a strong foundation
+  - Particularly valuable when working with limited labeled data
+
+2. **Consider Dataset Size**:
+  - Self-supervised learning might require larger datasets to be effective
+  - If working with small datasets (<10K images), ImageNet pretraining might be more beneficial
+
+3. **Add Semi-supervised Learning**:
+  - If you have unlabeled data, semi-supervised learning can provide additional gains
+  - Works well in combination with pretrained weights
+
+
+
+
 
 
 
