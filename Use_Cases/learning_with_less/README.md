@@ -75,12 +75,19 @@ For a deeper dive into these concepts, especially semi-supervised techniques, co
   Use when you face a moderate amount of labeled data combined with a large amount of unlabeled data. It’s particularly useful when labeling is expensive and there exists a reliable method to propagate labels.
 
 
-## Implemntation
+## Implemntation and Results
 
-Recent studies ([Semi vs Unsupervised](https://arxiv.org/pdf/2307.08919)) have shown that MixMatch performs remarkably well. [MixMatch](https://arxiv.org/pdf/1905.02249) that incorporates mixup with semi-supervised techniques. Combining selfsupervied pretraining and semi-supervised finetuning also is shown to perform quite well as show in [SelfMatch](https://arxiv.org/pdf/2101.06480) and [CoMatch](https://arxiv.org/pdf/2011.11183). So here we will implement Self supervised pretraining and Semi-supervised finetuning, it is bit different from the original paper of SelfMatch where they use FixMatch for semi-supervised finetuning.
+Lets demostrate it using example of age prediction from facial images an image regression task. Our experiments were conducted on a dataset size (~8K images) is also similar to many real-world scenarios, especially in specialized domains like:
+- Medical imaging (tumor detection)
+- Agricultural (e.g., crop maturity assessment)
+- Industrial defect detection
+- Specialized biometric applications
 
-
-## Results: Age Prediction from Facial Images
+These domains often face similar challenges:
+- Limited labeled data due to expensive annotation
+- Domain expertise required for labeling
+- Privacy concerns limiting data availability
+- Rare occurrence of certain conditions/cases
 
 ### Dataset Statistics
 
