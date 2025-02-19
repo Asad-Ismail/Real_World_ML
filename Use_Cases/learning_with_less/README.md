@@ -98,9 +98,11 @@ These domains often face similar challenges:
 | Validation | 254 |
 | Unlabeled | 7,792(For semisupervised and self supervised) |
 
-### Performance Comparison (RMSE)
+### Performance Comparison (MSE)
+Below are results of our experiment, we are not trying to get SOTA performance but rather compare performance imporvement using different methods given all other parameters like batch size and learning rate stays the same. 
+*Note: Lower MSE indicates better performance*. 
 
-| Training Approach | Validation RMSE | Improvement |
+| Training Approach | Validation MSE | Improvement |
 |------------------|-----------------|-------------|
 | Training from Scratch | 272.00 | Baseline |
 | ImageNet Pretrained (Supervised) | 94.57 | -65.23% |
@@ -116,29 +118,35 @@ These domains often face similar challenges:
   - Adding semi-supervised learning to ImageNet pretraining further reduced error by ~16%
   - Best performance achieved by combining ImageNet weights with semi-supervised learning
 
-2. **Limited Self-supervised Success**: 
+3. **Limited Self-supervised Success**: 
   - Self-supervised + semi-supervised approach, while better than training from scratch, couldn't outperform ImageNet pretraining
   - This is likely due to:
     - Limited dataset size (8K images vs ImageNet's 1M+ images)
     - Insufficient data for effective self-supervised representation learning
 
-3. **Semi-supervised Advantage**: 
-  - Adding semi-supervised learning to ImageNet pretraining further reduced error by ~16%
-  - Best performance achieved by combining ImageNet weights with semi-supervised learning
-
 ### Recommendations
+
+Below are some recommendations of training DNNs specifically true on image related tasks(classificaiton, semgmentation, OD etc)
 
 1. **Start with Pretrained Models**:
   - Even for domain-specific tasks, for imaging tasks ImageNet weights provide a strong foundation
   - Particularly valuable when working with limited labeled data
+    
+2. **Leverage Data Augmentation** (Not focus of this article):
+  - Add task-specific augmentations they are consistently shown to improve model performance some image sepecific augmentation are MixUp/CutMix, CutOut, Color jittering etc
+  - Some augmentations might hurt performance if not aligned with task
 
-2. **Consider Dataset Size**:
-  - Self-supervised learning might require larger datasets to be effective
-  - If working with small datasets (<10K images), ImageNet pretraining might be more beneficial
+3. **Tune Hyperparameters** (Not focus of this article):
+  - Often overlooked but time and time again shown to 
 
 3. **Add Semi-supervised Learning**:
   - If you have unlabeled data, semi-supervised learning can provide additional gains
   - Works well in combination with pretrained weights
+
+4. **Self Supervised learning may or maynot be helpful**:
+  - Self-supervised learning might require larger datasets to be effective
+  - If working with small datasets (<10K images), ImageNet pretraining might be more beneficial
+
 
 
 
