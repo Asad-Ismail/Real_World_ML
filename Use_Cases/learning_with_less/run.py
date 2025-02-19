@@ -34,7 +34,7 @@ def parse_args():
 
     parser.add_argument("--sequential_training", default=True, action="store_true", 
                       help="First do self-supervised then semi-supervised")
-    parser.add_argument("--self_supervised_epochs", type=int, default=50,
+    parser.add_argument("--self_supervised_epochs", type=int, default=1,
                       help="Number of self-supervised training epochs")
     
     return parser.parse_args()
@@ -61,7 +61,8 @@ def train_one_epoch(model, train_loader, criterion, optimizer, device, args, tra
     running_loss = 0.0
     additional_metrics = {}
     num_batches = 0
-
+    grad_clip_value = args.grad_clip_value if hasattr(args, 'grad_clip_value') else 1.0
+    
     if args.mode == "supervised":
         for batch in tqdm(train_loader, desc="Training", leave=False):
             inputs = batch["image"].to(device)
@@ -93,6 +94,7 @@ def train_one_epoch(model, train_loader, criterion, optimizer, device, args, tra
             
             loss = nt_xent_loss(z1, z2, args.temperature)
             loss.backward()
+            nn.utils.clip_grad_norm_(model.parameters(), grad_clip_value)
             optimizer.step()
             
             running_loss += loss.item()
@@ -271,6 +273,7 @@ def main():
         
         # Temporarily change args for self-supervised phase
         original_mode = args.mode
+        original_epochs = args.epochs
         args.mode = "self_supervised"
         args.epochs = args.self_supervised_epochs
         
@@ -283,7 +286,7 @@ def main():
         # 2. Transfer encoder weights and initialize semi-supervised model
         print(f"Starting second phase of training with pretrained encoder {original_mode} ...")
         # Get the pretrained encoder
-        pretrained_encoder = self_supervised_model
+        pretrained_encoder = self_supervised_model.encoder
         
         # Build new model for semi-supervised learning
         semi_supervised_model = build_model(model=pretrained_encoder, 

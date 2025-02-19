@@ -370,7 +370,7 @@ def build_model(model=None,self_supervised=False):
     if hasattr(model, 'fc'):
         num_ftrs = model.fc.in_features
     else:  
-        num_ftrs = model.encoder.fc.in_features
+        num_ftrs = model.fc.in_features
     if self_supervised:
         model = SimCLRModel(model,input_dim=num_ftrs)
     else :
@@ -384,9 +384,8 @@ def build_model(model=None,self_supervised=False):
         )
         if hasattr(model, 'fc'):
             model.fc = mlp_head
-        elif hasattr(model, 'projection_head'):  
-            model.projection_head = mlp_head 
         else:
-            raise AttributeError("Model must have either 'fc' or 'projection_head' attribute")
+        # If there's no fc layer, add the mlp_head to the model's output
+            model = nn.Sequential(model, mlp_head)
     
     return model
