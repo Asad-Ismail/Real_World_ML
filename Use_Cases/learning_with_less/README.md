@@ -129,7 +129,7 @@ These domains often face similar challenges:
 ### Recommendations
 
 1. **Start with Pretrained Models**:
-  - Even for domain-specific tasks, ImageNet weights provide a strong foundation
+  - Even for domain-specific tasks, for imaging tasks ImageNet weights provide a strong foundation
   - Particularly valuable when working with limited labeled data
 
 2. **Consider Dataset Size**:
