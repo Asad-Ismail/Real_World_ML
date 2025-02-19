@@ -115,7 +115,7 @@ Below are results of our experiment, we are not trying to get SOTA performance b
   - Despite the domain difference between ImageNet and facial images, using pretrained weights dramatically improved performance (65% reduction in error)
 
 2. **Semi-supervised Advantage**: 
-  - Adding semi-supervised learning to ImageNet pretraining further reduced error by ~16%
+  - Adding semi-supervised learning to ImageNet pretraining further reduced error by ~16% (over pretrained model training)
   - Best performance achieved by combining ImageNet weights with semi-supervised learning
 
 3. **Limited Self-supervised Success**: 
@@ -139,11 +139,11 @@ Below are some recommendations of training DNNs specifically true on image relat
 3. **Tune Hyperparameters** (Not focus of this article):
   - Often overlooked but time and time again shown to 
 
-3. **Add Semi-supervised Learning**:
+4. **Add Semi-supervised Learning**:
   - If you have unlabeled data, semi-supervised learning can provide additional gains
   - Works well in combination with pretrained weights
 
-4. **Self Supervised learning may or maynot be helpful**:
+5. **Self Supervised learning may or maynot be helpful**:
   - Self-supervised learning might require larger datasets to be effective
   - If working with small datasets (<10K images), ImageNet pretraining might be more beneficial
 
