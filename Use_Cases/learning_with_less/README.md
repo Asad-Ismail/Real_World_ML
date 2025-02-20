@@ -58,36 +58,18 @@ Semi-supervised learning combines a small amount of labeled data with a larger p
   - Can be sensitive to the quality and distribution of the unlabeled data.
   - Requires careful balancing between labeled and unlabeled loss components during training.
 
-## Further Reading
 
-For a deeper dive into these concepts, especially semi-supervised techniques, consider reading Lilian Weng's excellent three-part blog series on the subject:  
-[Part 1: Semi-Supervised Learning](https://lilianweng.github.io/posts/2021-12-05-semi-supervised/)
-
-## Summary
-
-- **Pretrained Models:**  
-  Ideal when you have limited labeled data and a well-established pretrained architecture exists in your domain. Start here if rapid prototyping and leveraging established features are your goals.
-
-- **Self-Supervised Learning:**  
-  Best suited when you have abundant unlabeled data. It’s an effective way to learn robust representations before fine-tuning on your specific task.
-
-- **Semi-Supervised Learning:**  
-  Use when you face a moderate amount of labeled data combined with a large amount of unlabeled data. It’s particularly useful when labeling is expensive and there exists a reliable method to propagate labels.
-
-
-## Implemntation and Results
+## Example Implementation and General Recommendations
 
 Lets demostrate it using example of age prediction from facial images an image regression task. Our experiments were conducted on a dataset size (~8K images) is also similar to many real-world scenarios, especially in specialized domains like:
+
 - Medical imaging (tumor detection)
-- Agricultural (e.g., crop maturity assessment)
+- Agricultural 
 - Industrial defect detection
-- Specialized biometric applications
 
 These domains often face similar challenges:
 - Limited labeled data due to expensive annotation
 - Domain expertise required for labeling
-- Privacy concerns limiting data availability
-- Rare occurrence of certain conditions/cases
 
 ### Dataset Statistics
 
@@ -96,10 +78,12 @@ These domains often face similar challenges:
 | Total Dataset | 8,469 | 
 | Training (Labeled) | 423 |
 | Validation | 254 |
-| Unlabeled | 7,792(For semisupervised and self supervised) |
+| Unlabeled | 7,792 (For semisupervised and self supervised) |
 
-### Performance Comparison (MSE)
+### Performance Comparison
+
 Below are results of our experiment, we are not trying to get SOTA performance but rather compare performance imporvement using different methods given all other parameters like batch size and learning rate stays the same. 
+
 *Note: Lower MSE indicates better performance*. 
 
 | Training Approach | Validation MSE | Improvement |
@@ -111,7 +95,7 @@ Below are results of our experiment, we are not trying to get SOTA performance b
 
 ### Key Findings
  
-1. **Pretrained Model is Crucial**: 
+1. **Pretrained Models are good starting point**: 
   - Despite the domain difference between ImageNet and facial images, using pretrained weights dramatically improved performance (65% reduction in error)
 
 2. **Semi-supervised Advantage**: 
@@ -129,10 +113,10 @@ Below are results of our experiment, we are not trying to get SOTA performance b
 Below are some recommendations of training DNNs specifically true on image related tasks(classificaiton, semgmentation, OD etc)
 
 1. **Start with Pretrained Models**:
-  - Even for domain-specific tasks, for imaging tasks ImageNet weights provide a strong foundation
+  - Even for domain-specific tasktion
   - Particularly valuable when working with limited labeled data
     
-2. **Leverage Data Augmentation** (Not focus of this article):
+2. **Leverage Data Augmentation**:
   - Add task-specific augmentations they are consistently shown to improve model performance some image sepecific augmentation are MixUp/CutMix, CutOut, Color jittering etc
   - Some augmentations might hurt performance if not aligned with task
 
@@ -145,9 +129,29 @@ Below are some recommendations of training DNNs specifically true on image relat
 
 5. **Self Supervised learning may or maynot be helpful**:
   - Self-supervised learning might require larger datasets to be effective
-  - If working with small datasets (<10K images), ImageNet pretraining might be more beneficial
+  - If working with small datasets for example for images < 10K , self supervised might not work good enough for it and ImageNet pretraining might be more beneficial
 
 
+
+## Further Reading
+
+For a deeper dive into these concepts, especially semi-supervised techniques, consider reading Lilian Weng's excellent three-part blog series on the subject:  
+
+[Part 1: Semi-Supervised Learning](https://lilianweng.github.io/posts/2021-12-05-semi-supervised/)
+
+[Part 2: Active Learning](https://lilianweng.github.io/posts/2022-02-20-active-learning/)
+
+[Part 3: Data Augmentations](https://lilianweng.github.io/posts/2022-04-15-data-gen/)
+
+
+@article{weng2022datagen,
+  title   = "Learning with not Enough Data Part 3: Data Generation",
+  author  = "Weng, Lilian",
+  journal = "Lil'Log",
+  year    = "2022",
+  month   = "Apr",
+  url     = "https://lilianweng.github.io/posts/2022-04-15-data-gen/"
+}
 
 
 
