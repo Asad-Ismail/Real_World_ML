@@ -25,10 +25,10 @@ Pretrained models are networks that have been trained on large-scale, diverse da
 Self-supervised learning leverages large quantities of unlabeled data by formulating a pretext task where the data provides its own supervision. For example, predicting missing parts of data, enforcing consistency under data augmentation, or using contrastive methods to learn representations.
 
 **When to Use:**  
+
 - **Abundant Unlabeled Data:** When you have a lot of unlabeled examples, self-supervised learning can help extract meaningful features.
 - **Pretext Task Alignment:** When it is possible to define a pretext task that aligns well with the features needed in the downstream task.
 
-**Benefits & Considerations:**
 - **Pros:**  
   - Reduces dependency on annotated data.
   - Captures useful representations that generalize well.
@@ -43,25 +43,91 @@ Self-supervised learning leverages large quantities of unlabeled data by formula
 Semi-supervised learning combines a small amount of labeled data with a larger pool of unlabeled data during training. The idea is to propagate label information from labeled to unlabeled examples, thereby improving model performance when annotations are scarce.
 
 **When to Use:**  
+
 - **Mixed Data Availability:** When you have a limited set of labeled data but still have large amounts of unlabeled data.
 - **Cost Constraints:** When labeling data is expensive or time-consuming, semi-supervised methods can bridge the gap.
 
-**Example Methods:**  
-- **Pi Model:** A consistency-based approach that encourages similar predictions for an input and its augmented version.
-- Other methods include Mean Teacher, Virtual Adversarial Training, and graph-based methods.
-
-**Benefits & Considerations:**
 - **Pros:**  
   - Improves performance over purely supervised learning with small datasets.
   - Efficient use of available unlabeled data.
 - **Cons:**  
-  - Can be sensitive to the quality and distribution of the unlabeled data.
-  - Requires careful balancing between labeled and unlabeled loss components during training.
+  - It is sensitive to the quality and distribution of the unlabeled data.
+  - Requires careful balancing between the labeled and unlabeled loss terms. Often, the unlabeled loss coefficient is linearly ramped up during training.
+
+
+## 4. Data Augmentation
+
+**Overview:**  
+Data augmentation expands the training dataset by applying controlled transformations to existing samples. These transformations should preserve the semantic meaning of the data while introducing meaningful variations that help the model learn robust features.
+
+**When to Use:**  
+- **Limited Dataset Size:** When you have a small labelled dataset most of the real world applications so it is almost always a good idea to use data augmentation.
+- **Known Invariances:** When you understand what transformations your model should be invariant to (e.g., rotation, lighting changes).
+- **Domain-Specific Requirements:** When you can incorporate domain knowledge into augmentation strategies.
+
+**Key Techniques:**
+1. **Basic Transformations:**
+   - Geometric: Flipping, rotation, scaling, cropping
+   - Color: Brightness, contrast, saturation adjustment
+   - Noise: Gaussian noise, blur, random erasing
+
+2. **Advanced Methods:**
+   - Mixing: MixUp, CutMix (combining multiple images)
+   - Learned: AutoAugment, RandAugment (automated policies)
+   - Consistency: AugMix (multiple augmented versions)
+
+
+**Benefits & Considerations:**
+- **Pros:**  
+  - Increases effective dataset size without additional data collection.
+  - Improves model robustness and generalization.
+  - Can encode domain-specific invariances.
+- **Cons:**  
+  - Requires careful selection of augmentation strategies to avoid introducing harmful transformations.
+
+### 5. Hyperparameter Tuning
+
+**Overview:**  
+Hyperparameters are parameters that are not learned from data during training, but instead are set by the user before training begins. Hyperparameter tuning is the process of systematically searching for optimal model configuration parameters. 
+
+**When to Use:**  
+ - **Not highly Resource Constraints:**
+ Almost alwys a good idea to tune hyperparameters for better performance given you have enough computational resources.
+
+**Benefits & Considerations:**
+- **Pros:**  
+  - Can significantly improve model performance without additional data.
+  - Helps identify optimal model complexity for limited data scenarios.
+- **Cons:**  
+  - Can be computationally expensive.
+  - Risk of overfitting to validation set if not done carefully.
+
+
+## 6. Active Learning
+
+**Overview:**  
+Active learning is an iterative process where the model identifies the most informative unlabeled examples for human annotation. This approach optimizes the data labeling effort by focusing on samples that would most improve model performance.
+
+**When to Use:**  
+- **Limited Annotation Budget:** When you have constraints on how many samples can be labeled which is a common scenario in real world applications.
+- **Large Unlabeled Pool:** When you have access to many unlabeled examples but can only label a subset.
+- **Expensive Labeling:** When annotation requires significant time or expertise which is also mostly the case.
+
+**Benefits & Considerations:**
+- **Pros:**  
+  - Reduces annotation costs while maximizing learning efficiency.
+  - Focuses human effort on the most valuable examples.
+  - Can achieve better performance with fewer labeled examples.
+- **Cons:**  
+  - Requires careful design of sample selection strategy.
+  - May introduce bias if selection criteria aren't well-designed.
+  - Needs interactive labeling infrastructure.
+
 
 
 ## Example Implementation and General Recommendations
 
-Lets demostrate it using example of age prediction from facial images an image regression task. Our experiments were conducted on a dataset size (~8K images) is also similar to many real-world scenarios, especially in specialized domains like:
+Let's demonstrate this using example of age prediction from facial images an image regression task. Our experiments were conducted on a dataset size (~8K images) is also similar to many real-world scenarios, especially in specialized domains like:
 
 - Medical imaging (tumor detection)
 - Agricultural 
@@ -119,6 +185,7 @@ Below are some recommendations of training DNNs specifically true on image relat
 2. **Leverage Data Augmentation**:
   - Add task-specific augmentations they are consistently shown to improve model performance some image sepecific augmentation are MixUp/CutMix, CutOut, Color jittering etc
   - Some augmentations might hurt performance if not aligned with task
+  
 
 3. **Tune Hyperparameters** (Not focus of this article):
   - Often overlooked but time and time again shown to 
@@ -142,17 +209,6 @@ For a deeper dive into these concepts, especially semi-supervised techniques, co
 [Part 2: Active Learning](https://lilianweng.github.io/posts/2022-02-20-active-learning/)
 
 [Part 3: Data Augmentations](https://lilianweng.github.io/posts/2022-04-15-data-gen/)
-
-
-@article{weng2022datagen,
-  title   = "Learning with not Enough Data Part 3: Data Generation",
-  author  = "Weng, Lilian",
-  journal = "Lil'Log",
-  year    = "2022",
-  month   = "Apr",
-  url     = "https://lilianweng.github.io/posts/2022-04-15-data-gen/"
-}
-
 
 
 
