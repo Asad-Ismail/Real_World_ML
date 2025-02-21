@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.optim as optim
 import wandb
 from model import nt_xent_loss, cmixmatch, mixmatch 
-from model import semi_supervised_loss, build_model, linear_rampup
+from model import semi_supervised_loss, build_model, linear_rampup, build_model_uncertainty
 from data import prepare_dataset, create_dataloaders
 from tqdm import tqdm
 
@@ -15,10 +15,10 @@ def parse_args():
     parser.add_argument("--batch_size", type=int, default=16, help="Batch size for training")
     parser.add_argument("--epochs", type=int, default=100, help="Number of training epochs")
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
-    parser.add_argument("--use_wandb", default=True, action="store_true", help="Enable Weights and Biases logging")
+    parser.add_argument("--use_wandb", default=False, action="store_true", help="Enable Weights and Biases logging")
     parser.add_argument("--wandb_project", type=str, default="learn_with_lesser", help="Weights and Biases project name")
 
-    parser.add_argument("--mode", type=str, default="semi_supervised", 
+    parser.add_argument("--mode", type=str, default="supervised", 
                       choices=["supervised", "self_supervised", "semi_supervised"],
                       help="Training mode")
     parser.add_argument("--temperature", type=float, default=0.5, 
@@ -32,7 +32,7 @@ def parse_args():
     parser.add_argument("--waitepochs", type=int, default=10, 
                       help="Wait epoch before stopping training if val loss does not improves")
 
-    parser.add_argument("--sequential_training", default=True, action="store_true", 
+    parser.add_argument("--sequential_training", default=False, action="store_true", 
                       help="First do self-supervised then semi-supervised")
     parser.add_argument("--self_supervised_epochs", type=int, default=1,
                       help="Number of self-supervised training epochs")
@@ -308,7 +308,7 @@ def main():
         if args.mode == "self_supervised":
             model = build_model(self_supervised=True).to(device)
         else:
-            model = build_model(self_supervised=False).to(device)
+            model = build_model_uncertainty(self_supervised=False).to(device)
     
         criterion = nn.MSELoss()
         optimizer = optim.Adam(model.parameters(), lr=args.lr)

@@ -362,10 +362,38 @@ def nt_xent_loss(z1, z2, temperature=0.5):
     return F.cross_entropy(logits, labels)
 
 
-def build_model(model=None,self_supervised=False):
+def add_dropout_to_resnet(model, dropout_rate=0.5, num_last_blocks=8):
+    """
+    Adds dropout layers to the last 'num_last_blocks' of a ResNet model
+    after the *second* conv in BasicBlocks and
+    Modifies the model in-place.
+    """
+    layers = list(model.named_children())
+    block_count = 0
+
+    for name, layer in reversed(layers):
+        if isinstance(layer, (nn.Sequential)):
+            for block_name, block in reversed(list(layer.named_children())):
+                if isinstance(block, (models.resnet.BasicBlock, models.resnet.Bottleneck)):
+                    if block_count < num_last_blocks:
+                        # Add dropout after conv layer
+                        if isinstance(block, models.resnet.BasicBlock):
+                            new_block = nn.Sequential(
+                                block.conv2,
+                                block.bn2,
+                                nn.Dropout(p=dropout_rate),
+                            )
+                            # Replace both conv2 and bn2 with the new sequence
+                            block.conv2 = new_block
+                            block.bn2 = nn.Identity()  
+                        block_count += 1
+                    else:
+                      return 
+
+def build_model(model=None,self_supervised=False, dropout_rate=None):
     # Load pretrained ResNet34 and replace its final classification layer with a MLP head for regression
     if model is None:
-        model = models.resnet34(weights=models.ResNet34_Weights.IMAGENET1K_V1)
+         model= models.resnet34(weights=models.ResNet34_Weights.IMAGENET1K_V1)
         #model = models.resnet34(weights=None)
     if hasattr(model, 'fc'):
         num_ftrs = model.fc.in_features
@@ -375,17 +403,30 @@ def build_model(model=None,self_supervised=False):
         model = SimCLRModel(model,input_dim=num_ftrs)
     else :
         # Add regression head for supervised learning and semi-supervised learning
-        mlp_head = nn.Sequential(
-            nn.Linear(num_ftrs, 256),
-            nn.ReLU(),
-            nn.Linear(256, 64),
-            nn.ReLU(),
-            nn.Linear(64, 1)
-        )
+        if dropout_rate is not None:
+            mlp_head = nn.Sequential(
+                nn.Linear(num_ftrs, 256),
+                nn.ReLU(),
+                nn.Linear(256, 64),
+                nn.ReLU(),
+                nn.Linear(64, 1)
+            )
+        else:
+            mlp_head = nn.Sequential(
+                nn.Linear(num_ftrs, 256),
+                nn.ReLU(),
+                nn.Dropout(p=dropout_rate),
+                nn.Linear(256, 64),
+                nn.ReLU(),
+                nn.Dropout(p=dropout_rate),
+                nn.Linear(64, 1)
+            )
         if hasattr(model, 'fc'):
             model.fc = mlp_head
         else:
         # If there's no fc layer, add the mlp_head to the model's output
             model = nn.Sequential(model, mlp_head)
+        if dropout_rate is not None:
+            add_dropout_to_resnet(model, dropout_rate=dropout_rate, num_last_blocks=8) 
     
     return model
