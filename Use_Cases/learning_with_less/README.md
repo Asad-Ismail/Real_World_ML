@@ -2,6 +2,7 @@
 
 In many real-world applications, collecting a large, well-labeled dataset is challenging or even infeasible. We present methods and practices that allow models to learn effectively from limited data. The key approaches include using Pretrained Models, Self-Supervised Learning, and Semi-Supervised Learning. Each of these techniques offers unique advantages depending on your data availability and task requirements.
 
+
 ## 1. Pretrained Models
 
 **Overview:**  
@@ -194,7 +195,7 @@ Below are some recommendations of training DNNs specifically true on image relat
   - If you have unlabeled data, semi-supervised learning can provide additional gains
   - Works well in combination with pretrained weights
 
-5. **Self Supervised learning may or maynot be helpful**:
+5. **Self Supervised learning may or maynot be helpful (if input dataset is limited))**:
   - Self-supervised learning might require larger datasets to be effective
   - If working with small datasets for example for images < 10K , self supervised might not work good enough for it and ImageNet pretraining might be more beneficial
 
@@ -209,6 +210,29 @@ For a deeper dive into these concepts, especially semi-supervised techniques, co
 [Part 2: Active Learning](https://lilianweng.github.io/posts/2022-02-20-active-learning/)
 
 [Part 3: Data Augmentations](https://lilianweng.github.io/posts/2022-04-15-data-gen/)
+
+
+## References: 
+
+<a id="1">[1]</a>
+Assran, M., Chidlovskii, B., Misra, I., Bojanowski, P., Bordes, A., Rabbat, M., LeCun, Y., Ballas, N. (2023).
+"Semi-supervised or Unsupervised? Revisiting Semi-supervised Learning for Vision Models."
+arXiv:2307.08919
+
+<a id="2">[2]</a>
+Berthelot, D., Carlini, N., Goodfellow, I., Papernot, N., Oliver, A., Raffel, C. (2019).
+"MixMatch: A Holistic Approach to Semi-Supervised Learning."
+arXiv:1905.02249
+
+<a id="3">[3]</a>
+Kim, J., Hou, W., Lim, H., Kim, K., Yoo, D. (2021).
+"SelfMatch: Combining Contrastive Self-Supervision and Semi-Supervision for Object Detection."
+arXiv:2101.06480
+
+<a id="4">[4]</a>
+Li, J., Xiong, C., Hoi, S. (2020).
+"CoMatch: Semi-supervised Learning with Contrastive Graph Regularization."
+arXiv:2011.11183
 
 
 
