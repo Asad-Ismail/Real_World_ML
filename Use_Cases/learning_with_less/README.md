@@ -3,13 +3,13 @@
 In many real-world applications, collecting a large, well-labeled dataset is challenging or even infeasible. We present methods and practices that allow models to learn effectively from limited data. The key approaches include using Pretrained Models, Self-Supervised Learning, and Semi-Supervised Learning. Each of these techniques offers unique advantages depending on your data availability and task requirements.
 
 
-## 1. Pretrained Models
+## 1. Transfer Learning
 
 **Overview:**  
-Pretrained models are networks that have been trained on large-scale, diverse datasets (like ImageNet or BERT's training corpus) and can be fine-tuned for a specific task. These models capture a wealth of general features and representations that are transferable to tasks with limited data.
+Trnsfer learning from pretrained models are networks that have been trained on large-scale, diverse datasets (like ImageNet or BERT's training corpus) and can be fine-tuned for a specific task. These models capture a wealth of general features and representations that are transferable to tasks with limited data.
 
 **When to Use:**  
-- **Limited Labeled Data:** If your target dataset is small but comes from a **similar domain** as the dataset on which the model was pretrained.
+- **Limited Labeled Data:** If your target dataset is small but comes from a similar domain* as the dataset on which the model was pretrained.
 - **Time & Resources Constraints:** Fine-tuning is often significantly faster and less resource-intensive than training from scratch.
 - **Robust Baseline:** Pretrained models typically provide strong performance even with minimal fine-tuning.
 
@@ -17,8 +17,12 @@ Pretrained models are networks that have been trained on large-scale, diverse da
 - **Pros:**  
   - Fast convergence during training.
   - Excellent generalization on similar tasks.
+  - Also imporves performance 
 - **Cons:**  
   - May not fully capture domain-specific nuances if the pretraining domain is too different.
+
+* Even for significantly different domains like medical imaging, starting with pretrained models (e.g., ImageNet weights) typically outperforms random initialization and accelerates convergence. This makes transfer learning valuable even across substantial domain gaps, providing a strong foundation regardless of target task specificity.
+
 
 ## 2. Self-Supervised Learning
 
