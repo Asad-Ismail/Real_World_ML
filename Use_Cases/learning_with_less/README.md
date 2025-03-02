@@ -1,5 +1,7 @@
 # Learning with Less Data
 
+See also this substack post for better vieweing experience [substack](https://open.substack.com/pub/asadismail2/p/maximizing-performance-with-minimal?r=1tzi4u&utm_campaign=post&utm_medium=web&showWelcomeOnShare=true)
+
 In many real-world applications, collecting a large, well-labeled dataset is challenging or even infeasible. We present methods and practices that allow models to learn effectively from limited data. The key approaches include using Pretrained Models, Self-Supervised Learning, and Semi-Supervised Learning. Each of these techniques offers unique advantages depending on your data availability and task requirements.
 
 
