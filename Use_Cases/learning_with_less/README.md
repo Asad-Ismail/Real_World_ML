@@ -21,7 +21,7 @@ Trnsfer learning from pretrained models are networks that have been trained on l
 - **Cons:**  
   - May not fully capture domain-specific nuances if the pretraining domain is too different.
 
-* Even for significantly different domains like medical imaging, starting with pretrained models (e.g., ImageNet weights) typically outperforms random initialization and accelerates convergence. This makes transfer learning valuable even across substantial domain gaps, providing a strong foundation regardless of target task specificity.
+** Even for significantly different domains like medical imaging, starting with pretrained models (e.g., ImageNet weights) typically outperforms random initialization and accelerates convergence. This makes transfer learning valuable even across substantial domain gaps, providing a strong foundation regardless of target task specificity.
 
 
 ## 2. Self-Supervised Learning
