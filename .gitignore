@@ -10,4 +10,5 @@
 **.pyc
 *.pth
 **.DS_Store
-
+**.env
+.env
