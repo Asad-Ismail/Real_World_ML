@@ -14,3 +14,4 @@
 .env
 **wandb/
 **ppo_gpt2**/
+ .vscode/
