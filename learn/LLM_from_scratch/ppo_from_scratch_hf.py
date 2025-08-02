@@ -33,10 +33,29 @@ pvmodel = PolicyValueModel(policy_model).to(infer_device)
 ## Define Tokenizer
 tokenizer = AutoTokenizer.from_pretrained(model)
 ## Test the model
-inputs = tokenizer("Hello, my name is", return_tensors="pt").to("cuda")
-outputs, value = pvmodel(**inputs)
-print("Logits shape:", outputs.logits.shape)
-print("Value shape: ", value.shape)
+#inputs = tokenizer("Hello, my name is", return_tensors="pt").to("cuda")
+#outputs, value = pvmodel(**inputs)
+#print("Logits shape:", outputs.logits.shape)
+#print("Value shape: ", value.shape)
+## Load Datasets
+def prepare_dataset(examples):
+    """Create prompts for the model."""
+    # We create a prompt by taking the first 50 words of the review text to see
+    examples["query"] = [" ".join(text.split()[:50]) for text in examples["text"]]
+    return examples
+
+dataset = load_dataset("imdb", split="train").shuffle().select(range(1000))
+dataset = dataset.map(prepare_dataset, batched=True, remove_columns=dataset.column_names)
+
+def tokenize(element):
+    outputs = tokenizer(element["query"],padding=False)
+    return {"input_ids": outputs["input_ids"],"attention_mask": outputs["attention_mask"]}
+
+dataset = dataset.map(tokenize,batched=True,remove_columns=dataset.column_names)
+
+
+
+
 
 ## PPO has two stages 
 ## 1. roll out the experience
