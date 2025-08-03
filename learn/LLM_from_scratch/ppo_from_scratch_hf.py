@@ -97,10 +97,10 @@ for i, data in enumerate(dataset):
     print("Value shape: ", values.shape)
 
     print("**Input text**")
-    print(tokenizer.decode(generated_ids[0][:context_length], skip_special_tokens=True))
+    print(tokenizer.decode(generated_ids[0][:context_length], skip_special_tokens=False))
 
     print("*Generated text*")
-    print(tokenizer.decode(generated_ids[0][context_length:], skip_special_tokens=True))
+    print(tokenizer.decode(generated_ids[0][context_length:], skip_special_tokens=False))
 
     # Get logits of generated tokens
     index = generated_ids[:, context_length:]  # [B, G]
@@ -115,6 +115,22 @@ for i, data in enumerate(dataset):
 
     ref_logits = ref_output.logits[:, context_length-1:-1, :] / temperature
     ref_logprob = torch.gather(ref_logits.log_softmax(-1), dim=-1, index=index.unsqueeze(-1)).squeeze(-1)
+
+    ## Get Rewards
+    # Get token index just before the pad token to get valudable reward in generated text
+    pad_mask = generated_ids[:, context_length:] == tokenizer.pad_token_id
+    # get first occurance of pad token
+    first_pad = pad_mask.float().argmax(dim=1)
+    # if no pad token exist
+    any_pad = pad_mask.any(dim=1)
+    first_pad[~any_pad]= pad_mask.shape[1]
+    last_useful_token = first_pad -1 + context_length # shape of [B x 1]
+    # Now we get reward using the last_useful_token_index from a model but for now we are harcoding reward to be equal to
+    # normalized length of response to encourage smaller responses
+    rewards = last_useful_token / gen_config.max_new_tokens  # shape of [B x 1]
+
+    ## Get Values
+
 
     break
 
