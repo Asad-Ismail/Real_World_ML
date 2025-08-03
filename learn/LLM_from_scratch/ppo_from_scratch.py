@@ -29,7 +29,7 @@ logits[:,sequence_lengths], # shape[BSx1]
 '''
 ## Value Model
 ## pass input + response to value model adn get values for each response token
-## vlaue shape is [response(no query),1]
+## vlaue shape is [B,response(no query),1]
 
 ## Get all responses in replay buffer
 '''

@@ -3,10 +3,12 @@ import torch.nn as nn
 from datasets import load_dataset
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer, PreTrainedModel
+from torch.utils.data import DataLoader
 import random
 import numpy as np
 
 seed=42
+minibatch= 2
 
 def set_seed(seed):
     random.seed(seed)
@@ -15,7 +17,6 @@ def set_seed(seed):
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
     seed=seed
-
 # Set Seed
 set_seed(seed)  
 ## Define the models, We will define policy, reference and policy model normally we have a reward model trianed on human
@@ -66,70 +67,140 @@ dataset = load_dataset("imdb", split="train").shuffle(seed=seed).select(range(10
 dataset = dataset.map(prepare_dataset, batched=True, remove_columns=dataset.column_names)
 ## Pretokenize data to save on the fly tokenization
 def tokenize(element):
-    outputs = tokenizer(element["query"],padding=False,truncation=True)
+    outputs = tokenizer(element["query"],padding=True,truncation=True)
     return outputs
 
 dataset = dataset.map(tokenize,batched=True,remove_columns=dataset.column_names)
 # convert tor torch tensors
 dataset.set_format(type="torch", columns=["input_ids", "attention_mask"])
 
-for i, data in enumerate(dataset):
-    data = {k: v.unsqueeze(0).to(infer_device) for k, v in data.items()}
-    context_length = data["input_ids"].shape[1]
 
-    print(f"Input data {data}")
-    print("*" * 50)
+dataloader = DataLoader(dataset, batch_size=minibatch, shuffle=True)
 
-    with torch.no_grad():
-        generated_ids = pvmodel.model.generate(**data, **gen_config)
+# Gather minibatch
+for data in dataloader:
+    responses = []
+    logprobs_list = []
+    ref_logprobs_list = []
+    sequence_lengths = []
+    values_list = []
+    rewards_list = []
 
-    print("Generated Input IDS")
-    print(generated_ids)
-    print("*" * 50)
+    for singleitem in range(data["input_ids"].shape[0]):
+        
+        data = {k: v.unsqueeze(0).to(infer_device) for k, v in data[singleitem].items()}
+        context_length = data["input_ids"].shape[1]
 
-    attention_mask = (generated_ids != tokenizer.pad_token_id).long()
+        print(f"Input data {data}")
+        print("*" * 50)
 
-    with torch.no_grad():
-        outputs = pvmodel(input_ids=generated_ids, attention_mask=attention_mask)
-        logits, values = outputs[0].logits, outputs[1]
+        with torch.no_grad():
+            generated_ids = pvmodel.model.generate(**data, **gen_config)
 
-    print("Logits shape:", logits.shape)
-    print("Value shape: ", values.shape)
+        print("Generated Input IDS")
+        print(generated_ids)
+        print("*" * 50)
 
-    print("**Input text**")
-    print(tokenizer.decode(generated_ids[0][:context_length], skip_special_tokens=False))
+        attention_mask = (generated_ids != tokenizer.pad_token_id).long()
 
-    print("*Generated text*")
-    print(tokenizer.decode(generated_ids[0][context_length:], skip_special_tokens=False))
+        with torch.no_grad():
+            outputs = pvmodel(input_ids=generated_ids, attention_mask=attention_mask)
+            logits, values_ = outputs[0].logits, outputs[1]
 
-    # Get logits of generated tokens
-    index = generated_ids[:, context_length:]  # [B, G]
-    temperature = getattr(gen_config, "temperature", 1.0) + 1e-7
-    select_logits = logits[:, context_length-1:-1, :] / temperature
-    assert select_logits.shape[1] == index.shape[1], "Selcted logits shape does not match the index shape"
-    logprobs = torch.gather(select_logits.log_softmax(-1), dim=-1, index=index.unsqueeze(-1)).squeeze(-1)
+        print("Logits shape:", logits.shape)
+        print("Value shape: ", values_.shape)
 
-    # Reference model logprobs
-    with torch.no_grad():
-        ref_output = reference_model(input_ids=generated_ids, attention_mask=attention_mask)
+        print("**Input text**")
+        print(tokenizer.decode(generated_ids[0][:context_length], skip_special_tokens=False))
 
-    ref_logits = ref_output.logits[:, context_length-1:-1, :] / temperature
-    ref_logprob = torch.gather(ref_logits.log_softmax(-1), dim=-1, index=index.unsqueeze(-1)).squeeze(-1)
+        print("*Generated text*")
+        print(tokenizer.decode(generated_ids[0][context_length:], skip_special_tokens=False))
 
-    ## Get Rewards
-    # Get token index just before the pad token to get valudable reward in generated text
-    pad_mask = generated_ids[:, context_length:] == tokenizer.pad_token_id
-    # get first occurance of pad token
-    first_pad = pad_mask.float().argmax(dim=1)
-    # if no pad token exist
-    any_pad = pad_mask.any(dim=1)
-    first_pad[~any_pad]= pad_mask.shape[1]
-    last_useful_token = first_pad -1 + context_length # shape of [B x 1]
-    # Now we get reward using the last_useful_token_index from a model but for now we are harcoding reward to be equal to
-    # normalized length of response to encourage smaller responses
-    rewards = last_useful_token / gen_config.max_new_tokens  # shape of [B x 1]
+        # Get logits of generated tokens
+        gen_index = generated_ids[:, context_length:]  # [B, G]
+        temperature = getattr(gen_config, "temperature", 1.0) + 1e-7
+        select_logits = logits[:, context_length-1:-1, :] / temperature
+        assert select_logits.shape[1] == gen_index.shape[1], "Selcted logits shape does not match the index shape"
+        logprobs_ = torch.gather(select_logits.log_softmax(-1), dim=-1, index=gen_index.unsqueeze(-1)).squeeze(-1)
 
-    ## Get Values
+        # Reference model logprobs
+        with torch.no_grad():
+            ref_output = reference_model(input_ids=generated_ids, attention_mask=attention_mask)
+
+        ref_logits = ref_output.logits[:, context_length-1:-1, :] / temperature
+        ref_logprobs_ = torch.gather(ref_logits.log_softmax(-1), dim=-1, index=gen_index.unsqueeze(-1)).squeeze(-1)
+
+        ## Get Rewards
+        # Get token index just before the pad token to get valudable reward in generated text
+        pad_mask = generated_ids[:, context_length:] == tokenizer.pad_token_id
+        # get first occurance of pad token
+        first_pad = pad_mask.float().argmax(dim=1)
+        # if no pad token exist then take the len of generated sequence
+        any_pad = pad_mask.any(dim=1)
+        first_pad[~any_pad]= pad_mask.shape[1]
+        last_useful_tokens = first_pad -1 + context_length # shape of [B]
+        sequence_length = first_pad -1
+        # Now we get reward using the last_useful_token_index from a model but for now we are harcoding reward to be equal to
+        # normalized length of response to encourage smaller responses
+        rewards_ = last_useful_tokens / gen_config["max_new_tokens"]  # shape of [B]
+        print(f"Reward shape is {rewards_.shape}")
+        ## Reduce reward of uncomplete sentence
+        contain_eos_token = torch.any(generated_ids == tokenizer.eos_token_id, dim=-1)
+        rewards_[~contain_eos_token] -= 0.1
+
+        ## collect data
+        logprobs_list.append(logprobs_)
+        ref_logprobs_list.append(ref_logprobs_)
+        values_list.append(values_)
+        rewards_list.append(rewards_)
+        sequence_lengths.append(sequence_length)
+        responses.append(gen_index)
+        break
+
+    logprobs = torch.cat(logprobs_list, 0)
+    ref_logprobs = torch.cat(ref_logprobs_list, 0)
+    values = torch.cat(values_list, 0)
+    scores = torch.cat(rewards_list, 0)
+    responses = torch.cat(responses, 0)
+    sequence_lengths = torch.cat(sequence_lengths, 0)
+
+    ## get valid log probs, ref porbs and values, reward is already valid we could have done it above while getting 
+    # valid reward but is more efficent here since its calcualted in batch
+    INVALID_LOGPROB = 1
+    response_idxs = torch.arange(responses.shape[1], device=responses.device).repeat(responses.shape[0], 1)
+    padding_mask = response_idxs > sequence_lengths.unsqueeze(1)
+    logprobs = torch.masked_fill(logprobs, padding_mask, INVALID_LOGPROB)
+    ref_logprobs = torch.masked_fill(ref_logprobs, padding_mask, INVALID_LOGPROB)
+    sequence_lengths_p1 = sequence_lengths + 1
+    padding_mask_p1 = response_idxs > (sequence_lengths_p1.unsqueeze(1))
+    values = torch.masked_fill(values, padding_mask_p1, 0)
+
+    #compute rewards
+    # Formula used by http://joschu.net/blog/kl-approx.html for the k1 
+    kl_coeff = 0.05
+    logr = ref_logprobs - logprobs
+    kl = -logr
+    non_score_reward = -kl_coeff * kl
+    rewards = non_score_reward.clone()
+    actual_start = torch.arange(rewards.size(0), device=rewards.device)
+    actual_end = torch.where(sequence_lengths_p1 < rewards.size(1), sequence_lengths_p1, sequence_lengths)
+    rewards[[actual_start, actual_end]] += scores
+
+    #compute advantages and returns
+    gamma=1
+    lam =0.95
+    lastgaelam = 0
+    advantages_reversed = []
+    gen_length = responses.shape[1]
+    for t in reversed(range(gen_length)):
+        nextvalues = values[:, t + 1] if t < gen_length - 1 else 0.0
+        delta = rewards[:, t] + gamma * nextvalues - values[:, t]
+        lastgaelam = delta + gamma * lam * lastgaelam
+        advantages_reversed.append(lastgaelam)
+    advantages = torch.stack(advantages_reversed[::-1], axis=1)
+    returns = advantages + values
+    advantages = masked_whiten(advantages, ~padding_mask)
+    advantages = torch.masked_fill(advantages, padding_mask, 0)
 
 
     break
