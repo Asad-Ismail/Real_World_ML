@@ -18,7 +18,6 @@ def set_seed(seed):
 
 # Set Seed
 set_seed(seed)  
-
 ## Define the models, We will define policy, reference and policy model normally we have a reward model trianed on human
 ## preference here we will write a simple length based reward function. Note currently TRL does not support passing any
 ## function as reward model it needs to be inhereted from nn.Module
@@ -67,30 +66,56 @@ dataset = load_dataset("imdb", split="train").shuffle(seed=seed).select(range(10
 dataset = dataset.map(prepare_dataset, batched=True, remove_columns=dataset.column_names)
 ## Pretokenize data to save on the fly tokenization
 def tokenize(element):
-    outputs = tokenizer(element["query"],padding=True,truncation=True)
+    outputs = tokenizer(element["query"],padding=False,truncation=True)
     return outputs
 
 dataset = dataset.map(tokenize,batched=True,remove_columns=dataset.column_names)
 # convert tor torch tensors
 dataset.set_format(type="torch", columns=["input_ids", "attention_mask"])
 
-for i,data in enumerate(dataset):
+for i, data in enumerate(dataset):
     data = {k: v.unsqueeze(0).to(infer_device) for k, v in data.items()}
+    context_length = data["input_ids"].shape[1]
+
     print(f"Input data {data}")
-    print(f"*"*50)
-    generated_ids = pvmodel.model.generate(**data,**gen_config)
-    print(f"Generated Input IDS")
+    print("*" * 50)
+
+    with torch.no_grad():
+        generated_ids = pvmodel.model.generate(**data, **gen_config)
+
+    print("Generated Input IDS")
     print(generated_ids)
-    print(f"*"*50)
-    # Recompute attention_mask for the generated_ids, really needed for batched
+    print("*" * 50)
+
     attention_mask = (generated_ids != tokenizer.pad_token_id).long()
-    print(f"Generated Attention Mask")
-    print(attention_mask)
-    print(f"*"*50)
-    # Forward pass with both input_ids and attention_mask
-    outputs, values = pvmodel(input_ids=generated_ids,attention_mask=attention_mask)
-    print("Logits shape:", outputs.logits.shape)
+
+    with torch.no_grad():
+        outputs = pvmodel(input_ids=generated_ids, attention_mask=attention_mask)
+        logits, values = outputs[0].logits, outputs[1]
+
+    print("Logits shape:", logits.shape)
     print("Value shape: ", values.shape)
+
+    print("**Input text**")
+    print(tokenizer.decode(generated_ids[0][:context_length], skip_special_tokens=True))
+
+    print("*Generated text*")
+    print(tokenizer.decode(generated_ids[0][context_length:], skip_special_tokens=True))
+
+    # Get logits of generated tokens
+    index = generated_ids[:, context_length:]  # [B, G]
+    temperature = getattr(gen_config, "temperature", 1.0) + 1e-7
+    select_logits = logits[:, context_length-1:-1, :] / temperature
+    assert select_logits.shape[1] == index.shape[1], "Selcted logits shape does not match the index shape"
+    logprobs = torch.gather(select_logits.log_softmax(-1), dim=-1, index=index.unsqueeze(-1)).squeeze(-1)
+
+    # Reference model logprobs
+    with torch.no_grad():
+        ref_output = reference_model(input_ids=generated_ids, attention_mask=attention_mask)
+
+    ref_logits = ref_output.logits[:, context_length-1:-1, :] / temperature
+    ref_logprob = torch.gather(ref_logits.log_softmax(-1), dim=-1, index=index.unsqueeze(-1)).squeeze(-1)
+
     break
 
 
