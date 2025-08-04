@@ -17,6 +17,8 @@ def set_seed(seed):
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
     seed=seed
+
+
 # Set Seed
 set_seed(seed)  
 ## Define the models, We will define policy, reference and policy model normally we have a reward model trianed on human
@@ -74,28 +76,36 @@ dataset = dataset.map(tokenize,batched=True,remove_columns=dataset.column_names)
 # convert tor torch tensors
 dataset.set_format(type="torch", columns=["input_ids", "attention_mask"])
 
-
 dataloader = DataLoader(dataset, batch_size=minibatch, shuffle=True)
-
-# Gather minibatch
-for data in dataloader:
+optimizer = torch.optim.Adam(pvmodel.parameters(), lr=5e-5)
+## PPO has two stages 
+## 1. roll out the experience
+# Iterate over batches
+for batch in dataloader:
+    # query + responses needed for new policy value and logits generation
+    query_response = []
+    # only responses
     responses = []
     logprobs_list = []
     ref_logprobs_list = []
     sequence_lengths = []
     values_list = []
     rewards_list = []
+    context_length_list=[]
 
-    for singleitem in range(data["input_ids"].shape[0]):
-        
-        data = {k: v.unsqueeze(0).to(infer_device) for k, v in data[singleitem].items()}
-        context_length = data["input_ids"].shape[1]
+    batch_size = batch["input_ids"].shape[0]
 
-        print(f"Input data {data}")
+    for i in range(batch_size):
+        # Extract single sample
+        single_sample = {k: v[i].unsqueeze(0).to(infer_device) for k, v in batch.items()}
+        context_length = single_sample["input_ids"].shape[1]
+
+        print(f"Input sample {i}: {single_sample}")
         print("*" * 50)
 
         with torch.no_grad():
-            generated_ids = pvmodel.model.generate(**data, **gen_config)
+            generated_ids = pvmodel.model.generate(**single_sample, **gen_config)
+            query_response.append(generated_ids)
 
         print("Generated Input IDS")
         print(generated_ids)
@@ -130,6 +140,10 @@ for data in dataloader:
         ref_logits = ref_output.logits[:, context_length-1:-1, :] / temperature
         ref_logprobs_ = torch.gather(ref_logits.log_softmax(-1), dim=-1, index=gen_index.unsqueeze(-1)).squeeze(-1)
 
+        ## Get generated values
+        values_ = values_[:, context_length - 1 : -1].squeeze(-1)
+
+
         ## Get Rewards
         # Get token index just before the pad token to get valudable reward in generated text
         pad_mask = generated_ids[:, context_length:] == tokenizer.pad_token_id
@@ -155,14 +169,16 @@ for data in dataloader:
         rewards_list.append(rewards_)
         sequence_lengths.append(sequence_length)
         responses.append(gen_index)
-        break
+        context_length_list.append(context_length)
 
     logprobs = torch.cat(logprobs_list, 0)
     ref_logprobs = torch.cat(ref_logprobs_list, 0)
     values = torch.cat(values_list, 0)
     scores = torch.cat(rewards_list, 0)
     responses = torch.cat(responses, 0)
+    query_responses = torch.cat(query_response,0)
     sequence_lengths = torch.cat(sequence_lengths, 0)
+    context_length = torch.cat(context_length_list,0)
 
     ## get valid log probs, ref porbs and values, reward is already valid we could have done it above while getting 
     # valid reward but is more efficent here since its calcualted in batch
@@ -171,12 +187,12 @@ for data in dataloader:
     padding_mask = response_idxs > sequence_lengths.unsqueeze(1)
     logprobs = torch.masked_fill(logprobs, padding_mask, INVALID_LOGPROB)
     ref_logprobs = torch.masked_fill(ref_logprobs, padding_mask, INVALID_LOGPROB)
+    # For a sequence of length T, we expect T + 1 values: one for each token plus one more for the bootstrap.
     sequence_lengths_p1 = sequence_lengths + 1
     padding_mask_p1 = response_idxs > (sequence_lengths_p1.unsqueeze(1))
     values = torch.masked_fill(values, padding_mask_p1, 0)
 
-    #compute rewards
-    # Formula used by http://joschu.net/blog/kl-approx.html for the k1 
+    #compute rewards kl idvergence is needed here for reward shaping
     kl_coeff = 0.05
     logr = ref_logprobs - logprobs
     kl = -logr
@@ -198,18 +214,65 @@ for data in dataloader:
         lastgaelam = delta + gamma * lam * lastgaelam
         advantages_reversed.append(lastgaelam)
     advantages = torch.stack(advantages_reversed[::-1], axis=1)
+    # Target for Value models
     returns = advantages + values
-    advantages = masked_whiten(advantages, ~padding_mask)
+    #advantages = masked_whiten(advantages, ~padding_mask)
     advantages = torch.masked_fill(advantages, padding_mask, 0)
+
+    cliprange=cliprange_value =0.2
+    vf_coef=0.1
+    num_ppo_epochs=200
+
+    for ppo_epoch_idx in range(num_ppo_epochs):
+        permutation = torch.randperm(batch_size)
+        for i in range(0, batch_size, minibatch):
+            minibatch_inds = permutation[i : i + minibatch]
+
+            mb_advantage = advantages[minibatch_inds]
+            mb_responses = responses[minibatch_inds]
+            mb_query_responses = query_responses[minibatch_inds]
+            mb_logprobs = logprobs[minibatch_inds]
+            mb_return = returns[minibatch_inds]
+            mb_values = values[minibatch_inds]
+
+            attention_mask = (mb_query_responses != tokenizer.pad_token_id).long()
+
+            outputs = pvmodel(input_ids=mb_query_responses, attention_mask=attention_mask)
+            logits, vpred_temp = outputs[0].logits, outputs[1]
+
+            # Handling context length of logits can be of diferenc
+            #logits=torch.stack([logits[i, context_length[i] - 1 : -1] for i in range(logits.size(0))])
+            logits = logits[:, context_length - 1 : -1]
+            logits = logits[:, context_length - 1 : -1]
+            logits /= temperature + 1e-7
+
+            new_logprobs = torch.gather(logits.log_softmax(-1), dim=-1, index=mb_responses.unsqueeze(-1)).squeeze(-1)
+            new_logprobs = torch.masked_fill(new_logprobs, padding_mask[minibatch_inds], INVALID_LOGPROB)
+
+            vpred = vpred_temp[:, context_length - 1 : -1].squeeze(-1)
+            vpred = torch.masked_fill(vpred, padding_mask_p1[minibatch_inds], 0)
+
+            vpred_clipped = torch.clamp(
+                vpred,
+                mb_values - cliprange_value,
+                mb_values + cliprange_value,
+            )
+            vf_loss1 = (vpred - mb_return) ** 2
+            vf_loss2 = (vpred_clipped - mb_return) ** 2
+            vf_loss = 0.5 * torch.max(vf_loss1, vf_loss2).mean()
+
+            logprobs_diff = new_logprobs - mb_logprobs
+            ratio = torch.exp(logprobs_diff)
+
+            pg_loss1 = -mb_advantage * ratio
+            pg_loss2 = -mb_advantage * torch.clamp(ratio, 1.0 - cliprange, 1.0 + cliprange)
+            pg_loss = torch.max(pg_loss1, pg_loss2).mean()
+
+            total_loss = pg_loss + vf_coef * vf_loss
+            total_loss.backward()
+            optimizer.step()
+            optimizer.zero_grad()
 
 
     break
 
-
-## PPO has two stages 
-## 1. roll out the experience
-## 2. Update policy and Value Model
-
-
-
-## Roll Out the experience
