@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from datasets import load_dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers.generation.logits_process import LogitsProcessorList, InfNanRemoveLogitsProcessor
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from utils import set_seed
@@ -24,6 +25,9 @@ gen_config = {"max_new_tokens":50,
     "temperature":0.9,
     "top_k":50,
     "top_p":0.95}
+
+# Common logits processor to sanitize probabilities during sampling
+sampling_logits_processor = LogitsProcessorList([InfNanRemoveLogitsProcessor()])
 
 temperature_epsilon = 1e-7
 
@@ -76,7 +80,7 @@ dataset = dataset.map(tokenize,batched=True,remove_columns=dataset.column_names)
 dataset.set_format(type="torch", columns=["input_ids", "attention_mask"])
 
 dataloader = DataLoader(dataset, batch_size=minibatch_size, shuffle=True)
-optimizer = torch.optim.Adam(pvmodel.parameters(), lr=5e-5)
+optimizer = torch.optim.Adam(pvmodel.parameters(), lr=5e-7)
 ## PPO has two stages 
 ## 1. roll out the experience
 # Iterate over batches
@@ -103,7 +107,7 @@ for batch in dataloader:
         print("*" * 50)
 
         with torch.no_grad():
-            generated_ids = pvmodel.model.generate(**single_sample, **gen_config)
+            generated_ids = pvmodel.model.generate(**single_sample, **gen_config, logits_processor=sampling_logits_processor)
             query_response.append(generated_ids)
 
         print("Generated Input IDS")
@@ -190,7 +194,7 @@ for batch in dataloader:
     values = torch.masked_fill(values, padding_mask_p1, 0)
 
     #compute rewards; KL divergence is used here for reward shaping
-    kl_coeff = 0.05
+    kl_coeff = 0.1
     logr = ref_logprobs - logprobs
     kl = -logr
     non_score_reward = -kl_coeff * kl
@@ -218,7 +222,7 @@ for batch in dataloader:
 
     cliprange=cliprange_value =0.2
     vf_coef=0.1
-    num_ppo_epochs=200
+    num_ppo_epochs=4
 
     for ppo_epoch_idx in tqdm(range(num_ppo_epochs)):
         permutation = torch.randperm(batch_size)
@@ -282,7 +286,7 @@ with torch.no_grad():
 
     generations = pvmodel.model.generate(
         **inputs,
-        pad_token_id=pad_token_id,
+        logits_processor=sampling_logits_processor,
         **gen_config,
     )
 
