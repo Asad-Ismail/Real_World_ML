@@ -264,3 +264,31 @@ for batch in dataloader:
             total_loss.backward()
             optimizer.step()
             optimizer.zero_grad()
+
+## Running demo of trianed model
+# After training, Quick demo
+print(f"")
+pvmodel.model.eval()
+sample_prompts = [
+    "I recently watched movie gladiator and",
+    "The storyline of titanic was engaging because",
+    "In my honest opinion, the film momento is "
+]
+with torch.no_grad():
+    pad_token_id = tokenizer.pad_token_id if tokenizer.pad_token_id is not None else tokenizer.eos_token_id
+    inputs = tokenizer(sample_prompts, return_tensors="pt", padding=True, truncation=True)
+    inputs = {k: v.to(infer_device) for k, v in inputs.items()}
+    context_lengths = inputs["attention_mask"].sum(dim=1).tolist()
+
+    generations = pvmodel.model.generate(
+        **inputs,
+        pad_token_id=pad_token_id,
+        **gen_config,
+    )
+
+for i, prompt in enumerate(sample_prompts):
+    start = int(context_lengths[i])
+    generated_continuation = tokenizer.decode(generations[i][start:], skip_special_tokens=True)
+    print("Prompt:", prompt)
+    print("Generation:", generated_continuation)
+    print("-" * 80)
