@@ -5,30 +5,30 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers.generation.logits_process import LogitsProcessorList, InfNanRemoveLogitsProcessor
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from utils import set_seed
+from utils import set_seed, batch_generation
+from transformers import GenerationConfig
 
 
 SEED = 42
 MINIBATCH_SIZE = 2
-MODEL_ID = "Qwen/Qwen3-0.6B"
+#MODEL_ID = "Qwen/Qwen3-0.6B"
+MODEL_ID= "gpt2"
 DEVICE_MAP = "auto"
-
-GEN_CONFIG = {
-    "max_new_tokens": 50,
-    "do_sample": True,
-    "temperature": 0.9,
-    "top_k": 50,
-    "top_p": 0.95,
-}
-
-SAMPLING_LOGITS_PROCESSOR = LogitsProcessorList([InfNanRemoveLogitsProcessor()])
-
 TEMPERATURE_EPSILON = 1e-7
+
 
 # Optional lower precision to reduce memory if CUDA is available
 USE_FP16 = torch.cuda.is_available()
+USE_FP16 = False
 DTYPE_KWARGS = {"torch_dtype": torch.float16} if USE_FP16 else {}
 
+gen_config = GenerationConfig(
+max_new_tokens=50,
+do_sample=True,
+temperature=0.9,
+top_k=50,
+top_p=0.95,
+) 
 
 class PolicyValueModel(nn.Module):
     def __init__(self, model: AutoModelForCausalLM) -> None:
@@ -61,6 +61,10 @@ def build_models_and_tokenizer():
         pvmodel = pvmodel.to(dtype=torch.float16)
 
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
+
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+    gen_config.pad_token_id=tokenizer.pad_token_id
     return policy_model, reference_model, pvmodel, tokenizer, infer_device
 
 
@@ -92,7 +96,6 @@ def create_dataloader(tokenizer: AutoTokenizer) -> DataLoader:
     return dataloader
 
 
-
 def rollout_minibatch(pvmodel: PolicyValueModel, reference_model: AutoModelForCausalLM, tokenizer: AutoTokenizer, batch, infer_device):
     # Query + responses for new policy value and logits generation
     query_response = []
@@ -102,45 +105,38 @@ def rollout_minibatch(pvmodel: PolicyValueModel, reference_model: AutoModelForCa
     sequence_lengths = []
     values_list = []
     rewards_list = []
-    context_length_list = []
 
     batch_size = batch["input_ids"].shape[0]  # current minibatch size
 
+    ## Generate batch of responses
+
+    queries = batch["input_ids"].to(infer_device)
+    # Context length stays same due to padding in queires
+    context_length = queries.shape[1]
+    # Do generations batch wise so generated lengths are padded to same length also 
+    with torch.no_grad():
+        generated_ids, _ = batch_generation(pvmodel.model, queries, pad_token_id=tokenizer.pad_token_id, generation_config=gen_config)
+    # Do one at a time to generate values and rewards to reduce memory required will keep it that way for now can make 
+    # better by doing mini batch instead of single item processing
     for i in range(batch_size):
-        # Extract single sample
-        single_sample = {k: v[i].unsqueeze(0).to(infer_device) for k, v in batch.items()}
-        context_length = single_sample["input_ids"].shape[1]
+        generated_id = generated_ids[i].unsqueeze(0)
+        query_response.append(generated_id)
 
-        print(f"Input sample {i}: {single_sample}")
-        print("*" * 50)
+        attention_mask = (generated_id != tokenizer.pad_token_id).long()
 
         with torch.no_grad():
-            generated_ids = pvmodel.model.generate(
-                **single_sample, **GEN_CONFIG, logits_processor=SAMPLING_LOGITS_PROCESSOR
-            )
-            query_response.append(generated_ids)
-
-        print("Generated Input IDS")
-        print(generated_ids)
-
-        attention_mask = (generated_ids != tokenizer.pad_token_id).long()
-
-        with torch.no_grad():
-            outputs = pvmodel(input_ids=generated_ids, attention_mask=attention_mask)
+            outputs = pvmodel(input_ids=generated_id, attention_mask=attention_mask)
             logits, values_ = outputs[0].logits, outputs[1]
 
-        print("Logits shape:", logits.shape)
-        print("Value shape: ", values_.shape)
-
-        print("**Input text**")
-        print(tokenizer.decode(generated_ids[0][:context_length], skip_special_tokens=False))
-
-        print("*Generated text*")
-        print(tokenizer.decode(generated_ids[0][context_length:], skip_special_tokens=False))
-
+        #print("Logits shape:", logits.shape)
+        #print("Value shape: ", values_.shape)
+        #print("**Input text**")
+        #print(tokenizer.decode(generated_ids[0][:context_length], skip_special_tokens=False))
+        #print("*Generated text*")
+        #print(tokenizer.decode(generated_ids[0][context_length:], skip_special_tokens=False))
         # Get logits of generated tokens
-        gen_index = generated_ids[:, context_length:]  # [B, G]
-        temperature_scaled = float(GEN_CONFIG.get("temperature", 1.0)) + TEMPERATURE_EPSILON
+        gen_index = generated_id[:, context_length:]  # [B, G]
+        temperature_scaled = gen_config.temperature + TEMPERATURE_EPSILON
         select_logits = logits[:, context_length - 1 : -1, :] / temperature_scaled
         assert (
             select_logits.shape[1] == gen_index.shape[1]
@@ -149,7 +145,7 @@ def rollout_minibatch(pvmodel: PolicyValueModel, reference_model: AutoModelForCa
 
         # Reference model logprobs
         with torch.no_grad():
-            ref_output = reference_model(input_ids=generated_ids, attention_mask=attention_mask)
+            ref_output = reference_model(input_ids=generated_id, attention_mask=attention_mask)
 
         ref_logits = ref_output.logits[:, context_length - 1 : -1, :] / temperature_scaled
         ref_logprobs_ = torch.gather(ref_logits.log_softmax(-1), dim=-1, index=gen_index.unsqueeze(-1)).squeeze(-1)
@@ -159,20 +155,21 @@ def rollout_minibatch(pvmodel: PolicyValueModel, reference_model: AutoModelForCa
 
         # Get rewards
         # Get token index just before the pad token to get valuable reward in generated text
-        pad_mask = generated_ids[:, context_length:] == tokenizer.pad_token_id
+        pad_mask = generated_id[:, context_length:] == tokenizer.pad_token_id
         # get first occurrence of pad token
         first_pad = pad_mask.float().argmax(dim=1)
         # if no pad token exists then take the length of generated sequence
         any_pad = pad_mask.any(dim=1)
         first_pad[~any_pad] = pad_mask.shape[1]
         last_useful_tokens = first_pad - 1 + context_length  # shape of [B]
+        # sequence length is -1 since we will use it in 0 index tensors
         sequence_length = first_pad - 1
         # Now we get reward using the last_useful_token_index from a model but for now we are hardcoding reward to be equal to
         # normalized length of the response to encourage shorter responses
-        rewards_ = last_useful_tokens / GEN_CONFIG["max_new_tokens"]  # shape of [B]
-        print(f"Reward shape is {rewards_.shape}")
+        rewards_ = sequence_length / gen_config.max_new_tokens  # shape of [B]
+        #print(f"Reward shape is {rewards_.shape}")
         # Reduce reward of incomplete sentence
-        contain_eos_token = torch.any(generated_ids == tokenizer.eos_token_id, dim=-1)
+        contain_eos_token = torch.any(generated_id == tokenizer.eos_token_id, dim=-1)
         rewards_[~contain_eos_token] -= 0.1
 
         # collect data
@@ -182,7 +179,6 @@ def rollout_minibatch(pvmodel: PolicyValueModel, reference_model: AutoModelForCa
         rewards_list.append(rewards_)
         sequence_lengths.append(sequence_length)
         responses.append(gen_index)
-        context_length_list.append(int(context_length))
 
     logprobs = torch.cat(logprobs_list, 0)
     ref_logprobs = torch.cat(ref_logprobs_list, 0)
@@ -214,7 +210,7 @@ def rollout_minibatch(pvmodel: PolicyValueModel, reference_model: AutoModelForCa
         sequence_lengths,
         padding_mask,
         padding_mask_p1,
-        int(context_length),  # keep last context_length 
+        context_length,
         batch_size,
     )
 
@@ -227,7 +223,6 @@ def compute_advantages_and_returns(
     responses,
     sequence_lengths,
     padding_mask,
-    padding_mask_p1,
 ):
     # compute rewards; KL divergence is used here for reward shaping
     kl_coeff = 0.1
@@ -277,6 +272,7 @@ def ppo_update(
     cliprange_value = 0.2
     vf_coef = 0.1
     num_ppo_epochs = 4
+    clip_grad_norm = 0.5 
 
     for _ in tqdm(range(num_ppo_epochs)):
         permutation = torch.randperm(batch_size)
@@ -297,7 +293,7 @@ def ppo_update(
 
             # Handling context length differences of logits
             logits = logits[:, context_length - 1 : -1]
-            logits /= (float(GEN_CONFIG.get("temperature", 1.0)) + TEMPERATURE_EPSILON)
+            logits /= (gen_config.temperature + TEMPERATURE_EPSILON)
 
             new_logprobs = torch.gather(logits.log_softmax(-1), dim=-1, index=mb_responses.unsqueeze(-1)).squeeze(-1)
             new_logprobs = torch.masked_fill(new_logprobs, padding_mask[minibatch_inds], 1)
@@ -319,6 +315,7 @@ def ppo_update(
 
             total_loss = pg_loss + vf_coef * vf_loss
             total_loss.backward()
+            torch.nn.utils.clip_grad_norm_(pvmodel.parameters(), clip_grad_norm)
             optimizer.step()
             optimizer.zero_grad()
 
@@ -339,8 +336,7 @@ def run_inference(pvmodel: PolicyValueModel, tokenizer: AutoTokenizer, infer_dev
 
         generations = pvmodel.model.generate(
             **inputs,
-            logits_processor=SAMPLING_LOGITS_PROCESSOR,
-            **GEN_CONFIG,
+            **gen_config,
         )
 
     for i, prompt in enumerate(sample_prompts):
@@ -354,17 +350,13 @@ def run_inference(pvmodel: PolicyValueModel, tokenizer: AutoTokenizer, infer_dev
 def main() -> None:
     # Set seed
     set_seed(SEED)
-
     # Build models/tokenizer
     # Not using policy_model direct we wrap it in pv model to use single forward pass
-    policy_model, reference_model, pvmodel, tokenizer, infer_device = build_models_and_tokenizer()
-
+    policyModel, reference_model, pvmodel, tokenizer, infer_device = build_models_and_tokenizer()
     # Data
     dataloader = create_dataloader(tokenizer)
-
     # Optimizer
     optimizer = torch.optim.Adam(pvmodel.parameters(), lr=5e-7)
-
     # PPO training loop
     for batch in dataloader:
         (
@@ -389,7 +381,6 @@ def main() -> None:
             responses,
             sequence_lengths,
             padding_mask,
-            padding_mask_p1,
         )
 
         ppo_update(
@@ -408,7 +399,7 @@ def main() -> None:
             context_length,
         )
     # Run inference
-    run_demo(pvmodel, tokenizer, infer_device)
+    run_inference(pvmodel, tokenizer, infer_device)
 
 
 if __name__ == "__main__":
