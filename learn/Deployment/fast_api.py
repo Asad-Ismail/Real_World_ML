@@ -4,6 +4,7 @@ import joblib
 from typing import List
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from contextlib import asynccontextmanager
 
 
 logging.basicConfig(
@@ -20,8 +21,10 @@ class PredictionRequest(BaseModel):
     features: List[float]  # list of numeric features
 
 
-@app.on_event("startup")
-def load_model():
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Load the ML model
     global model
     if not os.path.exists(MODEL_PATH):
         logging.error(f"Model file not found at: {MODEL_PATH}")
@@ -29,6 +32,8 @@ def load_model():
     #model = joblib.load(MODEL_PATH)
     model = lambda x: 1
     logging.info(f"Model loaded from: {MODEL_PATH}")
+    yield model
+    del model
 
 
 @app.get("/ping")
