@@ -336,7 +336,8 @@ def run_inference(pvmodel: PolicyValueModel, tokenizer: AutoTokenizer, infer_dev
 
         generations = pvmodel.model.generate(
             **inputs,
-            **gen_config,
+            #**gen_config,
+            generation_config=gen_config,
         )
 
     for i, prompt in enumerate(sample_prompts):
@@ -350,7 +351,7 @@ def run_inference(pvmodel: PolicyValueModel, tokenizer: AutoTokenizer, infer_dev
 def main() -> None:
     # Set seed
     set_seed(SEED)
-    # Build models/tokenizer
+    # Build models/tokenizerbatch_generat
     # Not using policy_model direct we wrap it in pv model to use single forward pass
     policyModel, reference_model, pvmodel, tokenizer, infer_device = build_models_and_tokenizer()
     # Data
@@ -398,6 +399,7 @@ def main() -> None:
             batch_size,
             context_length,
         )
+        break
     # Run inference
     run_inference(pvmodel, tokenizer, infer_device)
 
