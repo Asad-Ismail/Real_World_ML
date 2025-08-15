@@ -153,7 +153,7 @@ def rollout_minibatch(pvmodel: PolicyValueModel, reference_model: AutoModelForCa
         # Get generated values
         values_ = values_[:, context_length - 1 : -1].squeeze(-1)
 
-        # Get rewards
+        # Get rewards 12,13,67,50000,5000,5000
         # Get token index just before the pad token to get valuable reward in generated text
         pad_mask = generated_id[:, context_length:] == tokenizer.pad_token_id
         # get first occurrence of pad token
@@ -166,7 +166,7 @@ def rollout_minibatch(pvmodel: PolicyValueModel, reference_model: AutoModelForCa
         sequence_length = first_pad - 1
         # Now we get reward using the last_useful_token_index from a model but for now we are hardcoding reward to be equal to
         # normalized length of the response to encourage shorter responses
-        rewards_ = sequence_length / gen_config.max_new_tokens  # shape of [B]
+        rewards_ = 1-(sequence_length / gen_config.max_new_tokens)  # shape of [B]
         #print(f"Reward shape is {rewards_.shape}")
         # Reduce reward of incomplete sentence
         contain_eos_token = torch.any(generated_id == tokenizer.eos_token_id, dim=-1)
@@ -399,7 +399,6 @@ def main() -> None:
             batch_size,
             context_length,
         )
-        break
     # Run inference
     run_inference(pvmodel, tokenizer, infer_device)
 
