@@ -33,6 +33,10 @@ class MHA(nn.Module):
         atten_weights = (q @ k.transpose(-2,-1))/ (self.head_dim**0.5)
         # attention weights are (B,heads,seq_length,seq_length)
         atten_weights = torch.softmax(atten_weights,dim=1)
+        causal_mask = torch.tril((seq_len,seq_len), devide=atten_weights.device)
+        atten_weights=atten_weights*causal_mask
+        # padding mask
+        atten_weights= torch.maskfill(atten_weights, padding_mask,0.0)
         attention = atten_weights @ v
         # attention is (B,heads,seq_length, head_dimension)
         attention= attention.transpose(1,2),reshape(B,seq_len,-1)
@@ -59,3 +63,4 @@ class transofrmer(nn.Module):
         ff_out = self.ffd(x)
         x=x+self.dropout(ff_out)
         return x
+
