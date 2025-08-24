@@ -1,7 +1,7 @@
 import dspy
 import os
 from tavily import TavilyClient
-from dotnet import load_dotenv
+from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
@@ -43,17 +43,8 @@ def check_llm_connection():
         return False
 
 
-openrouter_model_name = "mistralai/mistral-7b-instruct:free"
-openrouter_lm = dspy.OpenAI(
-    model=openrouter_model_name,
-    api_key=os.getenv("OPENROUTER_API_KEY"),
-    api_base="https://openrouter.ai/api/v1",
-    headers={"HTTP-Referer": "http://localhost:3000"},
-    max_tokens=2500
-)
-
-dspy.settings.configure(openrouter_lm)
-
+lm = dspy.LM("openrouter/mistralai/mistral-7b-instruct:free", api_key=os.getenv("OPENROUTER_API_KEY"), api_base="https://openrouter.ai/api/v1")
+dspy.configure(lm=lm)
 check_llm_connection()
 
 # os.environ["TAVILY_API_KEY"] = "YOUR_TAVILY_API_KEY"
@@ -99,9 +90,7 @@ class TavilySearch(dspy.Retrieve):
 class GenerateSearchQueries(dspy.Signature):
     """Generate a list of 3-5 specific search queries to research a topic."""
     research_topic = dspy.InputField(desc="The high-level topic to be researched.")
-    search_queries = dspy.OutputField(
-        desc="A list of 3-5 specific questions for a search engine."
-    )
+    search_queries = dspy.OutputField(desc="A list of 3-5 specific questions for a search engine.")
 
 class SynthesizeAndAnswer(dspy.Signature):
     """Given a question and search context, provide a concise answer."""
@@ -120,7 +109,7 @@ class GenerateFinalReport(dspy.Signature):
 tavily_retriever = TavilySearch(k=3) # Retrieve top 3 results per query
 
 # Configure DSPy settings with the LM and your new retriever
-dspy.settings.configure(lm=openrouter_lm, rm=tavily_retriever)
+dspy.configure(rm=tavily_retriever)
 
 
 class DeepResearchAgent(dspy.Module):
@@ -148,7 +137,7 @@ class DeepResearchAgent(dspy.Module):
         final_report = self.reporter(research_topic=research_topic, qa_pairs=formatted_qa)
         return dspy.Prediction(report=final_report.report)
 
-# --- Now you can run it ---
+
 # research_agent = DeepResearchAgent()
 # result = research_agent(research_topic="The future of decentralized social media.")
 # print(result.report)
