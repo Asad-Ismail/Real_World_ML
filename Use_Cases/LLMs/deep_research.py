@@ -2,7 +2,10 @@ import dspy
 import os
 from tavily import TavilyClient
 from dotenv import load_dotenv
+from typing import List
 
+# ... (all your setup code, load_dotenv, check_llm_connection, lm configuration remains the same) ...
+# ... (The TavilySearch, GenerateSearchQueries, SynthesizeAndAnswer, and GenerateFinalReport classes are perfect as they are) ...
 # Load environment variables from .env file
 load_dotenv()
 
@@ -11,22 +14,17 @@ def check_llm_connection():
     Performs a simple "Hello World" test to verify the LLM connection.
     """
     try:
-        # 1. Define a simple signature for a basic task
         class BasicQA(dspy.Signature):
             """Ask a simple question, get a simple answer."""
             question = dspy.InputField()
             answer = dspy.OutputField()
 
-        # 2. Create a dspy.Predict module with this signature
         hello_world_predictor = dspy.Predict(BasicQA)
-
-        # 3. Ask a trivial question
-        # This is a lightweight call that should always work if the connection is good.
-        question = "What day of the week was , August 13, 2025?"
+        # Using a date relevant to our current time in the Netherlands.
+        question = "What day of the week was August 13, 2025?"
         
         result = hello_world_predictor(question=question)
 
-        # 4. Check the result and print a status message
         if result and result.answer:
             print(f"✅ LLM Connection Successful!")
             print(f"   Question: {question}")
@@ -37,28 +35,18 @@ def check_llm_connection():
             return False
 
     except Exception as e:
-        # Catch any exception, from authentication errors to network issues
         print(f"❌ LLM Connection Failed.")
         print(f"   Error details: {e}")
         return False
 
-
-lm = dspy.LM("openrouter/mistralai/mistral-7b-instruct:free", api_key=os.getenv("OPENROUTER_API_KEY"), api_base="https://openrouter.ai/api/v1")
+# Configure the LLM
+lm = dspy.LM("openrouter/moonshotai/kimi-k2:free", api_key=os.getenv("OPENROUTER_API_KEY"), api_base="https://openrouter.ai/api/v1")
 dspy.configure(lm=lm)
-check_llm_connection()
+if not check_llm_connection():
+    exit() # Exit if the LLM is not working
 
-# os.environ["TAVILY_API_KEY"] = "YOUR_TAVILY_API_KEY"
-
-# 2. Create the custom retriever class
 class TavilySearch(dspy.Retrieve):
     def __init__(self, k=3, api_key=None):
-        """
-        A retriever that uses the Tavily Search API.
-
-        Args:
-            k (int): The number of top search results to retrieve.
-            api_key (str): The Tavily API key. If None, it will use the TAVILY_API_KEY environment variable.
-        """
         super().__init__(k=k)
         if api_key is None:
             api_key = os.getenv("TAVILY_API_KEY")
@@ -67,30 +55,22 @@ class TavilySearch(dspy.Retrieve):
         self.client = TavilyClient(api_key=api_key)
 
     def forward(self, query_or_queries, k=None):
-        """
-        Search with Tavily and return the top k results.
-
-        Args:
-            query_or_queries (str or list[str]): The query or list of queries to search for.
-            k (int, optional): The number of results to retrieve. Defaults to self.k.
-        """
         k = k if k is not None else self.k
         queries = [query_or_queries] if isinstance(query_or_queries, str) else query_or_queries
         
-        # Perform the search for each query
         results = []
+        print(f"\n Searching Tavily for: {queries}...")
         for query in queries:
-            response = self.client.search(query=query, search_depth="basic")
-            # We are getting the content from the search results to feed the LLM
-            results.extend([d['content'] for d in response['results'][:k]])
-            
+            response = self.client.search(query=query, search_depth="basic", max_results=k)
+            results.extend([d['content'] for d in response['results']])
+        
+        print(f"Found {len(results)} snippets of content.")
         return results
-    
 
 class GenerateSearchQueries(dspy.Signature):
     """Generate a list of 3-5 specific search queries to research a topic."""
-    research_topic = dspy.InputField(desc="The high-level topic to be researched.")
-    search_queries = dspy.OutputField(desc="A list of 3-5 specific questions for a search engine.")
+    research_topic:str = dspy.InputField(desc="The high-level topic to be researched.")
+    search_queries:List[str] = dspy.OutputField(desc="A list of 3-5 specific questions for a search engine.")
 
 class SynthesizeAndAnswer(dspy.Signature):
     """Given a question and search context, provide a concise answer."""
@@ -105,39 +85,65 @@ class GenerateFinalReport(dspy.Signature):
     report = dspy.OutputField(desc="A comprehensive and well-structured research report.")
 
 
-# Instantiate your new Tavily retriever
-tavily_retriever = TavilySearch(k=3) # Retrieve top 3 results per query
-
-# Configure DSPy settings with the LM and your new retriever
-dspy.configure(rm=tavily_retriever)
-
 
 class DeepResearchAgent(dspy.Module):
-    def __init__(self):
+    def __init__(self, retriever):
         super().__init__()
-        # These modules will now be backed by prompts optimized for web search
-        self.planner = dspy.ChainOfThought(GenerateSearchQueries)
-        self.searcher_synthesizer = dspy.ChainOfThought(SynthesizeAndAnswer)
+        self.planner = dspy.Predict(GenerateSearchQueries)
+        self.synthesizer = dspy.ChainOfThought(SynthesizeAndAnswer)
         self.reporter = dspy.ChainOfThought(GenerateFinalReport)
+        self.retrieve = retriever
 
     def forward(self, research_topic):
-        planned_queries = self.planner(research_topic=research_topic).search_queries
-        qa_pairs = []
+        print(f"Starting deep research for topic: '{research_topic}'")
         
-        for query in planned_queries:
-            # THIS LINE NOW USES TAVILY AUTOMATICALLY!
-            context_from_web = dspy.retrieve(query) 
+        try:
+            # Step 1: Plan the search queries
+            planned_queries_result = self.planner(research_topic=research_topic)
+            planned_queries = planned_queries_result.search_queries
             
-            answer_result = self.searcher_synthesizer(question=query, search_context=context_from_web)
-            qa_pairs.append({"question": query, "answer": answer_result.answer})
-            print(f"Question: {query}\nAnswer: {answer_result.answer}\n---\n")
+            # REFINEMENT 3: Robust check for list type
+            if not isinstance(planned_queries, List):
+                print("LLM failed to return a list. Using the raw output as a single query.")
+                # Attempt to rescue by treating the whole output as one query
+                planned_queries = [str(planned_queries)]
 
-        # ... rest of the class is the same ...
+            print(f"Planned Queries: {planned_queries}")
+
+        except Exception as e:
+            print(f"Failed to generate search queries from LLM. Error: {e}")
+            return dspy.Prediction(report="Could not complete research because the planning stage failed.")
+
+        # Step 2 & 3: Search and Synthesize for each query
+        qa_pairs = []
+        for query in planned_queries:
+            # REFINEMENT 4: Call your retriever directly. It returns a list of strings.
+            context_from_web = self.retrieve(query) 
+            
+            print(f"\n Answering question: '{query}'")
+            answer_result = self.synthesizer(question=query, search_context=context_from_web)
+            
+            qa = {"question": query, "answer": answer_result.answer}
+            qa_pairs.append(qa)
+            print(f" Answer: {qa['answer']}")
+
+        # Step 4: Generate the final report
+        print("\nGenerating final report...")
         formatted_qa = "\n\n".join([f"Question: {p['question']}\nAnswer: {p['answer']}" for p in qa_pairs])
         final_report = self.reporter(research_topic=research_topic, qa_pairs=formatted_qa)
+        
         return dspy.Prediction(report=final_report.report)
+    
 
+# 1. Instantiate your retriever
+tavily_retriever = TavilySearch(k=3)
 
-# research_agent = DeepResearchAgent()
-# result = research_agent(research_topic="The future of decentralized social media.")
-# print(result.report)
+# 2. Pass the retriever instance during agent initialization
+research_agent = DeepResearchAgent(retriever=tavily_retriever)
+
+# 3. Run the agent and PRINT the final report
+research_topic = "The psychological effects of striving for constant happiness."
+result = research_agent(research_topic=research_topic)
+
+print("\n\n--- FINAL REPORT ---")
+print(result.report)
