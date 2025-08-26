@@ -135,13 +135,10 @@ class DeepResearchAgent(dspy.Module):
         return dspy.Prediction(report=final_report.report)
     
 
-# 1. Instantiate your retriever
 tavily_retriever = TavilySearch(k=3)
 
-# 2. Pass the retriever instance during agent initialization
 research_agent = DeepResearchAgent(retriever=tavily_retriever)
 
-# 3. Run the agent and PRINT the final report
 research_topic = "The psychological effects of striving for constant happiness."
 result = research_agent(research_topic=research_topic)
 
