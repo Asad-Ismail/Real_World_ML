@@ -1,0 +1,64 @@
+landmark_solutions_to_document:
+  # Early Foundations & Core ML
+  - "LeNet-5 (Gradient-Based Learning Applied to Document Recognition)"
+  - "Backpropagation (Learning Representations by Back-propagating Errors)"
+  - "LSTM (Long Short-Term Memory)"
+  - "SVM (Support-Vector Networks)"
+  - "AdaBoost (A Decision-Theoretic Generalization of On-Line Learning and an Application to Boosting)"
+  - "Deep Belief Nets (A Fast Learning Algorithm for Deep Belief Nets)"
+  - "SIFT (Distinctive Image Features from Scale-Invariant Keypoints)"
+  - "t-SNE (Visualizing Data using t-SNE)"
+  - "RBMs (A Practical Guide to Training Restricted Boltzmann Machines)"
+  - "Knowledge Distillation (Distilling the Knowledge in a Neural Network)"
+
+  # Optimization & Regularization
+  - "RMSprop (Hinton, Lecture 6.5, COURSERA)"
+  - "Nesterov Momentum (On the importance of initialization and momentum in deep learning)"
+  - "Mixup (mixup: Beyond Empirical Risk Minimization)"
+
+  # Foundational Deep Learning Architectures
+  - "Seq2Seq (Sequence to Sequence Learning with Neural Networks)"
+  - "R-CNN (Rich feature hierarchies for accurate object detection and semantic segmentation)"
+  - "MobileNet (MobileNets: Efficient Convolutional Neural Networks for Mobile Vision Applications)"
+  - "EfficientNet (EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks)"
+  - "PointNet (PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation)"
+  - "DeepLab (DeepLab: Semantic Image Segmentation with Deep Convolutional Nets, Atrous Convolution, and Fully Connected CRFs)"
+  - "SPP-net (Spatial Pyramid Pooling in Deep Convolutional Networks for Visual Recognition)"
+
+  # Natural Language Processing
+  - "ELMo (Deep contextualized word representations)"
+  - "CTC Loss (Connectionist Temporal Classification: Labelling Unaligned Sequence Data with Recurrent Neural Networks)"
+  - "BLEU Score (BLEU: a Method for Automatic Evaluation of Machine Translation)"
+  - "Transformer-XL (Transformer-XL: Attentive Language Models Beyond a Fixed-Length Context)"
+  - "XLNet (XLNet: Generalized Autoregressive Pretraining for Language Understanding)"
+  - "DistilBERT (DistilBERT, a distilled version of BERT: smaller, faster, cheaper and lighter)"
+  - "Chain-of-Thought Prompting (Chain-of-Thought Prompting Elicits Reasoning in Large Language Models)"
+  - "LoRA (LoRA: Low-Rank Adaptation of Large Language Models)"
+
+  # Generative Models
+  - "Pix2Pix (Image-to-Image Translation with Conditional Adversarial Networks)"
+  - "CycleGAN (Unpaired Image-to-Image Translation using Cycle-Consistent Adversarial Networks)"
+  - "BigGAN (Large Scale GAN Training for High Fidelity Natural Image Synthesis)"
+  - "PixelRNN (Pixel Recurrent Neural Networks)"
+  - "DALL-E (Zero-Shot Text-to-Image Generation)"
+  - "Self-Attention GAN (Self-Attention Generative Adversarial Networks)"
+
+  # Reinforcement Learning
+  - "TRPO (Trust Region Policy Optimization)"
+  - "DDPG (Continuous control with deep reinforcement learning)"
+  - "Double DQN (Deep Reinforcement Learning with Double Q-learning)"
+  - "World Models (World Models)"
+  - "RLHF (Deep Reinforcement Learning from Human Preferences)"
+
+  # Theory, Interpretability & New Concepts
+  - "The Lottery Ticket Hypothesis (The Lottery Ticket Hypothesis: Finding Sparse, Trainable Neural Networks)"
+  - "Adversarial Examples (Intriguing properties of neural networks)"
+  - "Focal Loss / RetinaNet (Focal Loss for Dense Object Detection)"
+  - "Mixture of Experts (Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts Layer)"
+  - "Neural ODE (Neural Ordinary Differential Equations)"
+  - "Mamba (Mamba: Linear-Time Sequence Modeling with Selective State Spaces)"
+  - "Bayesian Neural Networks (Weight Uncertainty in Neural Networks)"
+  
+  # Speech & Systems
+  - "Deep Speech 2 (Deep Speech 2: End-to-End Speech Recognition in English and Mandarin)"
+  - "Softmax (Probabilistic Interpretation of Feedforward Classification Network Outputs)"

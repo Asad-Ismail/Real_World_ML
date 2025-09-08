@@ -1,0 +1,15 @@
+{
+    "solution_name": "YouTube Recommendations (Deep Neural Networks for YouTube Recommendations)",
+    "simplified_problem": "Large-scale personalized video recommendation",
+    "problem_it_solved": "How to recommend relevant videos to over a billion users from a catalog of hundreds of millions of videos in real-time, while handling extreme scale, sparse implicit feedback, and the need to balance immediate engagement with long-term user satisfaction.",
+    "historical_context": "Before 2016, YouTube's recommendation system relied heavily on matrix factorization and shallow neural networks. These approaches struggled with the scale (billions of users \u00d7 hundreds of millions of videos), the sparsity of user-video interactions (most users watch only a tiny fraction of videos), and the cold-start problem for new videos. Additionally, they couldn't effectively incorporate rich features like video thumbnails, titles, or user demographics. The system also faced challenges in balancing exploration vs exploitation and handling the sequential nature of user sessions.",
+    "landmark_solution_details": {
+        "domain": "Recommender Systems",
+        "title": "Deep Neural Networks for YouTube Recommendations",
+        "concept": "A two-stage deep learning architecture: (1) Candidate Generation Network that retrieves hundreds of relevant videos from the entire corpus using user history and context, and (2) Ranking Network that scores these candidates using a rich set of features to produce the final recommendations. Both networks use deep neural networks with embeddings for sparse categorical features.",
+        "math_foundation": "The candidate generation network is trained as a multiclass classification problem with softmax: P(w_t=i|U,C) = exp(v_i^T u) / sum_j exp(v_j^T u), where u is the user embedding and v_i is the video embedding. The ranking network uses weighted logistic regression with cross-entropy loss, where positive examples (watched videos) are weighted by watch time to optimize for expected watch time rather than click-through rate.",
+        "implementation": "Candidate Generation: Deep neural network with embeddings for user watch history, search history, demographics, and context. Average pooling aggregates variable-length sequences. Ranking: Wide & Deep architecture with hundreds of features including video embeddings, user embeddings, time since last watch, and freshness features. Uses ReLU activations and dropout for regularization.",
+        "verification": "Deployed to production serving billions of users. A/B tests showed significant improvements in watch time per user, demonstrating the effectiveness of deep learning over previous matrix factorization approaches. The system successfully handles the scale of YouTube's user base and video catalog.",
+        "inspiration": "Word2Vec (embedding approach for sparse features), Wide & Deep Learning (combining memorization and generalization), and traditional two-stage recommender systems (candidate generation + ranking)"
+    }
+}

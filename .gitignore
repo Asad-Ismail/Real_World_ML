@@ -14,4 +14,8 @@
 .env
 **wandb/
 **ppo_gpt2**/
- .vscode/
+ .vscode
+
+ Use_Cases/LLMs/historical_ai_landmarks/**
+
+ **/anomaly/data/

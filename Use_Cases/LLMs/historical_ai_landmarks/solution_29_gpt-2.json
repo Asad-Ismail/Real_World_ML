@@ -1,0 +1,15 @@
+{
+    "solution_name": "GPT-2 (Language Models are Unsupervised Multitask Learners)",
+    "simplified_problem": "Large-scale unsupervised language understanding",
+    "problem_it_solved": "How can we create a single language model that can perform multiple NLP tasks (like question answering, translation, summarization) without any task-specific training or fine-tuning, simply by predicting the next word in a sequence?",
+    "historical_context": "Before GPT-2, NLP systems were typically trained on specific supervised tasks with labeled datasets. Models like BERT and the original GPT required fine-tuning on downstream tasks. The prevailing belief was that unsupervised pre-training alone couldn't capture the full complexity needed for diverse language tasks. While transfer learning had shown promise, models still needed task-specific heads and fine-tuning. The largest language models at the time were trained on relatively small datasets (like 1B tokens for BERT), and there was skepticism about whether simply scaling up language modeling could lead to emergent multitask capabilities.",
+    "landmark_solution_details": {
+        "domain": "Natural Language Processing",
+        "title": "Language Models are Unsupervised Multitask Learners",
+        "concept": "Demonstrate that a sufficiently large transformer language model trained on a massive, diverse web text corpus can perform various NLP tasks in a zero-shot setting by using the text itself as a form of implicit supervision. The model learns task behaviors simply by predicting the next token, where the task specification is provided in natural language within the prompt.",
+        "math_foundation": "Standard autoregressive language modeling objective: maximize the log-likelihood of the next token given previous tokens: L = \u03a3 log P(w_t | w_1, ..., w_{t-1}; \u03b8). The key insight is that when the training data contains examples of tasks formatted as natural language (e.g., 'Translate English to French: cat -> chat'), the model learns to generalize these patterns without explicit supervision.",
+        "implementation": "A transformer decoder-only architecture (similar to GPT-1) scaled up to 1.5B parameters, trained on WebText - a curated dataset of 40GB of internet text. Uses byte-level BPE tokenization to handle any Unicode string. No task-specific modifications - the same architecture and weights are used for all tasks, with tasks specified via natural language prompts.",
+        "verification": "Achieved state-of-the-art results on 7 out of 8 tested language modeling datasets in a zero-shot setting. Demonstrated strong performance on tasks like reading comprehension, translation, summarization, and question answering without any fine-tuning. For example, achieved 55 F1 on CoQA (close to supervised baselines) and 1.2 BLEU on WMT-14 French-English translation.",
+        "inspiration": "Transfer learning and unsupervised pre-training trends, combined with the observation that internet text naturally contains examples of various tasks formatted as natural language."
+    }
+}

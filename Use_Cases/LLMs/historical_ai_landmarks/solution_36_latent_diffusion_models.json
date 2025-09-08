@@ -1,0 +1,15 @@
+{
+    "solution_name": "Latent Diffusion Models (High-Resolution Image Synthesis with Latent Diffusion Models)",
+    "simplified_problem": "Efficient high-resolution image generation.",
+    "problem_it_solved": "Diffusion models achieve impressive image quality but require hundreds or thousands of denoising steps in high-dimensional pixel space, making them computationally prohibitive for high-resolution synthesis. The quadratic complexity of attention mechanisms in pixel space further exacerbates this issue, limiting practical deployment to low resolutions or requiring massive computational resources.",
+    "historical_context": "By 2020, diffusion models like DDPM and improved variants had demonstrated remarkable sample quality on low-resolution datasets (e.g., 64\u00d764 ImageNet), but scaling to 512\u00d7512 or 1024\u00d71024 remained infeasible. Training required hundreds of GPU-days, and inference involved thousands of neural network evaluations per image. Concurrent work on autoregressive models (e.g., VQGAN) achieved high resolution but suffered from slow sequential sampling. The field needed a method to retain diffusion models' quality while dramatically reducing computational cost.",
+    "landmark_solution_details": {
+        "domain": "Generative Modeling",
+        "title": "High-Resolution Image Synthesis with Latent Diffusion Models",
+        "concept": "Shift the diffusion process from high-dimensional pixel space to a lower-dimensional latent space learned by an autoencoder. A diffusion model is trained to denoise latent representations rather than pixels, achieving computational efficiency while maintaining quality. The autoencoder compresses images by a factor of 4\u00d7 to 16\u00d7, making both training and inference significantly faster.",
+        "math_foundation": "The model learns a reverse process p\u03b8(z\u2080|z\u209c) in latent space, where z = E(x) is the encoder's output. The training objective combines a reconstruction loss for the autoencoder: L_AE = ||x - D(E(x))||\u00b2 + \u03bb||E(x)||\u00b2, with the standard diffusion loss in latent space: L_LD = E[||\u03b5 - \u03b5\u03b8(z\u209c, t, c)||\u00b2], where c represents conditioning information like text.",
+        "implementation": "First train a perceptual autoencoder (VQGAN or KL-regularized) to map images to a compressed latent space. Then train a U-Net diffusion model on these latents, incorporating cross-attention layers to handle text conditioning via CLIP text encoders. During inference, denoise latents in ~50 steps, then decode to pixels using the autoencoder's decoder.",
+        "verification": "LDM-4 (4\u00d7 compression) achieved FID scores of 3.60 on 256\u00d7256 ImageNet and 7.76 on 512\u00d7512 LSUN, while requiring ~4\u00d7 fewer FLOPs than pixel-space diffusion. Text-conditional LDMs (Stable Diffusion) enabled 512\u00d7512 text-to-image generation on consumer GPUs with 4GB VRAM.",
+        "inspiration": "Variational Autoencoders (latent variable models) and Vector Quantized VAEs (discrete latent spaces)."
+    }
+}

@@ -1,0 +1,15 @@
+{
+    "solution_name": "GPT-3 (Language Models are Few-Shot Learners)",
+    "simplified_problem": "Few-shot learning for natural language tasks",
+    "problem_it_solved": "How can we build a single language model that can perform a wide variety of NLP tasks (translation, question answering, arithmetic, etc.) without requiring task-specific fine-tuning or gradient updates, instead learning to perform new tasks from just a few examples provided in the prompt?",
+    "historical_context": "Before GPT-3, the dominant paradigm was \"pre-train then fine-tune\": large language models like BERT and GPT-2 were pre-trained on massive text corpora, then fine-tuned on labeled data for each specific task. This required thousands of labeled examples per task and retraining the model for each new application. While GPT-2 showed promising zero-shot capabilities, its performance was far below fine-tuned models. The field lacked a model that could robustly perform diverse tasks without any parameter updates.",
+    "landmark_solution_details": {
+        "domain": "Natural Language Processing",
+        "title": "Language Models are Few-Shot Learners",
+        "concept": "Demonstrated that sufficiently large language models (175B parameters) exhibit emergent few-shot learning abilities - they can learn new tasks at inference time purely from examples provided in the prompt, without any gradient updates. This 'in-context learning' allows the same model to perform diverse tasks by simply conditioning on task demonstrations.",
+        "math_foundation": "The model learns the conditional distribution P(output | input, task_description, examples) where examples = [(x\u2081, y\u2081), (x\u2082, y\u2082), ...]. During few-shot learning, the model uses in-context gradient descent - it implicitly optimizes a task-specific function within its forward pass by attending to the provided examples, effectively implementing meta-learning without parameter updates.",
+        "implementation": "A transformer decoder-only architecture scaled to 175 billion parameters, trained on 300 billion tokens from Common Crawl, WebText, Books1, Books2, and Wikipedia. Uses dense attention throughout, with alternating dense and sparse layers. The key innovation is the scale - both in parameters (10x larger than GPT-2) and training data (10x more tokens).",
+        "verification": "Achieved strong performance on diverse benchmarks: 75% accuracy on SuperGLUE (approaching fine-tuned BERT), 71.8% F1 on CoQA, 25.6 BLEU on WMT'14 French-English translation (matching supervised LSTMs), and solved 55.4% of 2-digit arithmetic problems - all without any fine-tuning, using only few-shot prompting.",
+        "inspiration": "Meta-learning and in-context learning concepts, combined with the hypothesis that scale would unlock emergent few-shot abilities."
+    }
+}

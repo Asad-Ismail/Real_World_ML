@@ -1,0 +1,15 @@
+{
+    "solution_name": "SIFT (Distinctive Image Features from Scale-Invariant Keypoints)",
+    "simplified_problem": "Robust local feature detection and description",
+    "problem_it_solved": "How can we reliably detect and describe distinctive local features in images that remain invariant to changes in scale, rotation, illumination, and partial viewpoint changes, enabling robust matching between different views of the same scene or object?",
+    "historical_context": "Before 1999, computer vision relied heavily on corner detectors like Harris corners or simple edge detectors, which were sensitive to scale changes and produced unstable features. Template matching approaches failed under geometric transformations. The field needed a method that could extract features that would be detected at the same locations regardless of image scaling, rotation, or lighting changes - critical for applications like object recognition, image stitching, and 3D reconstruction.",
+    "landmark_solution_details": {
+        "domain": "Computer Vision",
+        "title": "SIFT: Distinctive Image Features from Scale-Invariant Keypoints",
+        "concept": "A four-stage pipeline that detects keypoints at characteristic scales and orientations, then creates distinctive descriptors based on local gradient distributions. The method identifies extrema in scale-space using Difference of Gaussians (DoG), assigns consistent orientations based on local gradient directions, and generates 128-dimensional feature vectors that capture the spatial distribution of gradients in the keypoint's neighborhood.",
+        "math_foundation": "Scale-space extrema detection uses DoG: D(x,y,\u03c3) = (G(x,y,k\u03c3) - G(x,y,\u03c3)) * I(x,y), where G is a Gaussian kernel. Keypoint orientation is determined by creating a histogram of gradient orientations weighted by magnitude and a Gaussian window. The descriptor is formed by computing gradient histograms over 4\u00d74 spatial grids, each with 8 orientation bins, yielding 128 values.",
+        "implementation": "1) Scale-space extrema detection: Build Gaussian pyramid and compute DoG images. 2) Keypoint localization: Refine keypoint locations using Taylor expansion and eliminate edge responses. 3) Orientation assignment: Compute gradient magnitudes and orientations, create 36-bin histogram, assign dominant orientation. 4) Descriptor generation: Create 4\u00d74 grid of histograms around keypoint, normalize to unit length for illumination invariance.",
+        "verification": "Demonstrated superior performance on object recognition tasks across substantial viewpoint changes (up to 60 degrees), scale changes (factor of 4), and illumination variations. Achieved 95% correct matches between images with 50% overlap, significantly outperforming previous methods like Harris corners or correlation-based approaches.",
+        "inspiration": "Biological vision (scale-space theory mimicking human visual processing) and signal processing (Gaussian scale-space representation)."
+    }
+}

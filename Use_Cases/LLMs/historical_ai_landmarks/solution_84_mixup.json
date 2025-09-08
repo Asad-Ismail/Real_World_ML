@@ -1,0 +1,15 @@
+{
+    "solution_name": "Mixup (mixup: Beyond Empirical Risk Minimization)",
+    "simplified_problem": "Improving generalization through data augmentation",
+    "problem_it_solved": "Deep neural networks tend to memorize training data rather than learn generalizable patterns, leading to poor performance on out-of-distribution samples and vulnerability to adversarial examples. The standard Empirical Risk Minimization (ERM) principle, which minimizes average loss over training samples, encourages the model to fit the training distribution exactly, resulting in sharp decision boundaries that don't generalize well.",
+    "historical_context": "In 2017, deep learning models were achieving impressive results on benchmark datasets, but they exhibited concerning behaviors: they could be easily fooled by imperceptible adversarial perturbations, showed poor calibration on out-of-distribution data, and had high confidence even on clearly misclassified examples. Traditional data augmentation techniques like random cropping and flipping were helpful but limited, as they only created variations of existing samples rather than truly novel examples. The community was seeking ways to make models more robust and better calibrated without sacrificing accuracy.",
+    "landmark_solution_details": {
+        "domain": "Deep Learning Regularization",
+        "title": "mixup: Beyond Empirical Risk Minimization",
+        "concept": "Instead of training on individual data points, create virtual training examples by linearly interpolating between pairs of samples and their corresponding labels. This encourages the model to behave linearly between training examples, leading to smoother decision boundaries and better generalization.",
+        "math_foundation": "Given two training examples (x_i, y_i) and (x_j, y_j), generate a new training example: x\u0303 = \u03bbx_i + (1-\u03bb)x_j and \u1ef9 = \u03bby_i + (1-\u03bb)y_j, where \u03bb ~ Beta(\u03b1, \u03b1) with \u03b1 \u2208 (0, \u221e). The Beta distribution ensures \u03bb is between 0 and 1, creating convex combinations of inputs and labels.",
+        "implementation": "During training, for each mini-batch, randomly select pairs of samples and apply the mixup transformation. The mixing coefficient \u03bb is sampled from Beta(\u03b1, \u03b1) for each pair. The model is then trained to minimize the loss on these mixed samples. In practice, \u03b1 is typically set to 0.2-0.4 for good performance.",
+        "verification": "Mixup achieved state-of-the-art results on CIFAR-10 (error rate of 3.4%) and CIFAR-100 (error rate of 17.2%), while also improving robustness to adversarial examples and reducing memorization of corrupted labels. The method showed consistent improvements across various architectures and datasets.",
+        "inspiration": "Vicinal Risk Minimization (VRM) principle from statistical learning theory, which suggests training on neighborhoods around training samples rather than the samples themselves."
+    }
+}

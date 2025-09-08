@@ -1,0 +1,15 @@
+{
+    "solution_name": "GraphSAGE (Inductive Representation Learning on Large Graphs)",
+    "simplified_problem": "Scalable inductive learning on large graphs",
+    "problem_it_solved": "Traditional graph neural networks require training on the entire graph structure, making them transductive - they can only generate embeddings for nodes seen during training and cannot generalize to unseen nodes or graphs. This approach becomes computationally infeasible for large-scale graphs with millions of nodes, as it requires full-batch training and cannot handle dynamic graphs where new nodes are continuously added.",
+    "historical_context": "Before GraphSAGE, most graph representation learning methods like DeepWalk, node2vec, and early GNN variants were transductive. They learned embeddings by factorizing a matrix derived from the entire graph structure (e.g., adjacency matrix or random walk co-occurrence matrix). These methods required retraining from scratch when new nodes appeared and had memory complexity O(|V|) for storing embeddings, making them impractical for web-scale graphs. Additionally, they couldn't leverage node features and treated each node as an isolated entity during inference.",
+    "landmark_solution_details": {
+        "domain": "Graph Neural Networks",
+        "title": "GraphSAGE: Inductive Representation Learning on Large Graphs",
+        "concept": "Instead of training individual embeddings for each node, GraphSAGE learns a function that generates embeddings by sampling and aggregating features from a node's local neighborhood. This inductive approach allows the model to generate embeddings for unseen nodes using only their local graph structure and features, without retraining.",
+        "math_foundation": "The core operation is a neighborhood aggregation function: h_v^k = \u03c3(W^k \u00b7 CONCAT(h_v^{k-1}, AGG({h_u^{k-1}, \u2200u \u2208 N(v)}))), where h_v^k is the representation of node v at layer k, N(v) are sampled neighbors, AGG is an aggregation function (mean, LSTM, or pooling), and W^k are learnable weights. The final embedding is z_v = h_v^K after K layers.",
+        "implementation": "For each node, sample a fixed-size set of neighbors at each depth (typically 25 neighbors per layer). Apply the aggregation function recursively: first aggregate from 1-hop neighbors, then from 2-hop neighbors using the already-computed 1-hop representations, and so on. Use minibatch training with neighborhood sampling to enable training on large graphs without loading the entire graph into memory.",
+        "verification": "GraphSAGE achieved state-of-the-art results on several benchmarks: 73.9% F1-score on the PPI dataset (protein-protein interactions), 50.2% on Reddit posts, and 97.8% on the citation network Pubmed. Crucially, it maintained performance when tested on completely unseen nodes and graphs, demonstrating true inductive capability.",
+        "inspiration": "Weisfeiler-Lehman graph isomorphism test and message-passing neural networks"
+    }
+}

@@ -1,0 +1,15 @@
+{
+    "solution_name": "SSD (SSD: Single Shot MultiBox Detector)",
+    "simplified_problem": "Real-time object detection with a single neural network pass.",
+    "problem_it_solved": "Object detection systems required two-stage approaches: first generating region proposals (like Selective Search or RPN), then classifying each proposal. This made them slow (R-CNN family took seconds per image) and unsuitable for real-time applications. The challenge was to achieve accurate object detection in a single forward pass of the network while maintaining speed.",
+    "historical_context": "Before SSD, the dominant object detection approaches were:\n- R-CNN (2014): Used Selective Search to generate ~2000 region proposals, then ran a CNN on each proposal. Very slow (~47s per image).\n- Fast R-CNN (2015): Still used Selective Search but shared convolutional features, improving to ~2.3s per image.\n- Faster R-CNN (2015): Replaced Selective Search with a Region Proposal Network (RPN), achieving ~200ms per image but still a two-stage process.\n- YOLO (2015): First single-stage detector but struggled with small objects and multiple objects per grid cell.\nThe field needed a method that could match two-stage accuracy while achieving real-time speeds.",
+    "landmark_solution_details": {
+        "domain": "Computer Vision - Object Detection",
+        "title": "SSD: Single Shot MultiBox Detector",
+        "concept": "SSD eliminates the need for region proposal generation by predicting object classes and bounding box offsets directly from feature maps at multiple scales in a single forward pass. It uses a set of default boxes (priors) with different aspect ratios and scales at each feature map location, allowing the network to handle objects of various sizes and shapes efficiently.",
+        "math_foundation": "The training objective combines localization loss (Smooth L1) and confidence loss (softmax): L(x, c, l, g) = (1/N)(L_conf(x, c) + \u03b1L_loc(x, l, g)). For each default box d, the network predicts: (1) offsets (\u0394(cx, cy, w, h)) relative to d, and (2) class confidences for C+1 classes (including background). The matching strategy assigns each ground truth box to the best-overlapping default box (IoU > 0.5).",
+        "implementation": "Base network (VGG-16 truncated before classification layers) extracts features. Additional convolutional layers progressively decrease in size (conv8_2, conv9_2, conv10_2, conv11_2) to detect objects at multiple scales. Each feature map location has k default boxes (k=4 or 6 depending on feature map). For each default box, predict 4 localization offsets and C class scores. Non-Maximum Suppression (NMS) removes duplicate detections.",
+        "verification": "SSD300 achieved 74.3% mAP on PASCAL VOC 2007 test at 59 FPS on a single NVIDIA Titan X, significantly faster than Faster R-CNN (73.2% mAP at 7 FPS) and YOLO (63.4% mAP at 45 FPS). On COCO, SSD512 achieved 80.0% mAP@0.5, demonstrating strong performance across object sizes.",
+        "inspiration": "YOLO (single-stage detection concept), MultiBox (default box/prior concept), and traditional sliding window approaches."
+    }
+}

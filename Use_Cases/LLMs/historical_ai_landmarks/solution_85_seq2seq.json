@@ -1,0 +1,15 @@
+{
+    "solution_name": "Seq2Seq (Sequence to Sequence Learning with Neural Networks)",
+    "simplified_problem": "End-to-end neural sequence transduction",
+    "problem_it_solved": "Traditional NLP systems for tasks like machine translation relied on complex, hand-engineered pipelines with separate components for alignment, translation rules, and language modeling. These systems were brittle, required extensive linguistic expertise, and couldn't be optimized end-to-end for the final translation quality.",
+    "historical_context": "Before 2014, statistical machine translation (SMT) dominated the field, using phrase-based models with separate components for alignment, translation, and language modeling. These systems required feature engineering, had many hyperparameters to tune, and struggled with long-range dependencies and rare words. Neural networks had shown promise in language modeling, but no unified neural architecture existed that could directly map variable-length input sequences to variable-length output sequences while being trained end-to-end.",
+    "landmark_solution_details": {
+        "domain": "Natural Language Processing",
+        "title": "Sequence to Sequence Learning with Neural Networks",
+        "concept": "A single neural network architecture that can map input sequences to output sequences of different lengths. The model uses an encoder-decoder architecture where an RNN (typically LSTM) encodes the entire input sequence into a fixed-length vector representation, and another RNN decodes this vector into the target sequence one token at a time.",
+        "math_foundation": "The model maximizes the conditional probability P(y_1, ..., y_T' | x_1, ..., x_T) where x is the input sequence and y is the output sequence. This is factorized as: P(y|x) = \u03a0_{t=1}^{T'} P(y_t | y_1, ..., y_{t-1}, c) where c is the context vector produced by the encoder. The encoder computes c = q(h_1, ..., h_T) where h_t = f(x_t, h_{t-1}), and the decoder computes P(y_t | y_{t-1}, s_t, c) where s_t = g(y_{t-1}, s_{t-1}, c).",
+        "implementation": "Two LSTM networks are used - an encoder that processes the input sequence in reverse order (which improves performance by introducing short-term dependencies between source and target), and a decoder that generates the output sequence. The encoder's final hidden state becomes the context vector. During training, the model uses teacher forcing where the true previous token is fed as input to the decoder. Beam search is used during inference to find the most likely translation.",
+        "verification": "Achieved a BLEU score of 34.81 on the WMT'14 English to French translation task, approaching the best reported results at the time (which used phrase-based SMT with additional neural components). Demonstrated that a single neural network could perform end-to-end translation without any linguistic knowledge or feature engineering.",
+        "inspiration": "Statistical machine translation (the encoder-decoder structure mirrors the source-to-target mapping in SMT) and neural language modeling (using RNNs to model sequential dependencies)."
+    }
+}

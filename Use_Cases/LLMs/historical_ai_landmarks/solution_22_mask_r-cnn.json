@@ -1,0 +1,15 @@
+{
+    "solution_name": "Mask R-CNN (Mask R-CNN)",
+    "simplified_problem": "Instance-level object segmentation",
+    "problem_it_solved": "Object detection systems could accurately locate and classify objects with bounding boxes, but lacked the ability to provide precise pixel-level segmentation masks for each detected instance. This limitation prevented applications requiring fine-grained understanding of object boundaries, such as robotic manipulation, autonomous driving, and medical imaging.",
+    "historical_context": "By 2017, the field had achieved significant progress in object detection with Faster R-CNN, which used a Region Proposal Network (RPN) to generate object proposals and then classified them. However, these systems only outputted rectangular bounding boxes. Meanwhile, semantic segmentation methods like FCN and DeepLab could produce pixel-level masks but couldn't distinguish between different instances of the same class. The challenge was to combine the strengths of both approaches - the instance-level understanding of object detection with the pixel-level precision of semantic segmentation.",
+    "landmark_solution_details": {
+        "domain": "Computer Vision",
+        "title": "Mask R-CNN",
+        "concept": "Extend Faster R-CNN by adding a parallel branch for predicting segmentation masks on each Region of Interest (RoI), in addition to the existing classification and bounding box regression branches. The key innovation is RoIAlign, which properly aligns extracted features with the input image to preserve spatial accuracy for mask prediction.",
+        "math_foundation": "The multi-task loss function combines three components: L = L_cls + L_box + L_mask. The mask branch generates a K\u00d7m\u00d7m output for each RoI, where K is the number of classes and m\u00d7m is the mask resolution. A per-pixel sigmoid is applied, and L_mask is defined as the average binary cross-entropy loss, only including the mask corresponding to the true class.",
+        "implementation": "Builds on Faster R-CNN architecture by adding a fully convolutional mask prediction branch. Replace RoIPool with RoIAlign, which uses bilinear interpolation to compute exact values at regularly sampled locations in each RoI bin, eliminating the misalignment caused by quantization in RoIPool. The mask branch consists of small FCNs applied to each RoI to predict segmentation masks.",
+        "verification": "Achieved state-of-the-art results on COCO instance segmentation task, improving AP from 24.6 (FCIS) to 37.1. Also demonstrated strong performance on COCO object detection (bounding box AP of 39.8) and showed effectiveness on human pose estimation by treating keypoint locations as one-hot masks.",
+        "inspiration": "Extends the region-based CNN framework established by R-CNN \u2192 Fast R-CNN \u2192 Faster R-CNN, combining it with fully convolutional networks for dense prediction."
+    }
+}

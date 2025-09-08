@@ -1,0 +1,15 @@
+{
+    "solution_name": "GAN (Generative Adversarial Networks)",
+    "simplified_problem": "High-fidelity generative image modeling.",
+    "problem_it_solved": "Training generative models to produce sharp, realistic samples was challenging. Models that maximized likelihood often required intractable partition functions or approximated them, while others like VAEs tended to produce blurry, overly smooth results.",
+    "historical_context": "Prior to 2014, prominent generative models included Variational Autoencoders (VAEs) and autoregressive models. These methods typically worked by maximizing the log-likelihood of the data, or a lower bound of it. This objective often led to models that were difficult to train, computationally expensive, or produced samples that were blurry and lacked the sharp details of real-world data, as optimizing for likelihood does not necessarily mean optimizing for perceptual quality.",
+    "landmark_solution_details": {
+        "domain": "Generative Modeling",
+        "title": "Generative Adversarial Networks",
+        "concept": "A framework for training generative models via a two-player minimax game. A 'Generator' network (G) learns to create plausible data from random noise. A 'Discriminator' network (D) learns to distinguish between real data from the training set and 'fake' data from the Generator. G's goal is to fool D, and D's goal is to not be fooled. As they compete, both networks improve, and G learns to produce highly realistic samples.",
+        "math_foundation": "The training is framed as a minimax game with the value function: $$\\min_G \\max_D V(D, G) = \\mathbb{E}_{x \\sim p_{data}(x)}[\\log D(x)] + \\mathbb{E}_{z \\sim p_z(z)}[\\log(1 - D(G(z)))]$$ The Discriminator (D) tries to maximize this value, while the Generator (G) tries to minimize it.",
+        "implementation": "Two neural networks are defined. The Generator takes a random noise vector `z` as input and outputs a data sample (e.g., an image). The Discriminator takes a data sample as input and outputs a single scalar probability that the sample is real. Training alternates between updating D for a few steps on real and fake data, and then updating G to better fool D.",
+        "verification": "The original paper demonstrated that GANs could generate sharp, visually convincing images on datasets like MNIST, TFD, and CIFAR-10, which were qualitatively superior to samples from other contemporary generative models. The primary verification was the visual fidelity of the generated samples.",
+        "inspiration": "Game Theory (specifically, the concept of a zero-sum, minimax game)."
+    }
+}

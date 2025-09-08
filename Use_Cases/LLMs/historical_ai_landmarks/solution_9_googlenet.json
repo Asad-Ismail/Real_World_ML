@@ -1,0 +1,15 @@
+{
+    "solution_name": "GoogLeNet (Going Deeper with Convolutions)",
+    "simplified_problem": "Efficient deep convolutional architectures with reduced computational cost.",
+    "problem_it_solved": "As CNNs grew deeper to improve accuracy, they became computationally prohibitive, requiring billions of parameters and FLOPs. This made them impractical for real-world deployment on resource-constrained devices, and the increased depth didn't always translate to better performance due to overfitting and optimization difficulties.",
+    "historical_context": "In 2014, the state-of-the-art was AlexNet (8 layers) and VGGNet (16-19 layers). While VGGNet achieved excellent accuracy on ImageNet, it required ~138M parameters and 15.5B FLOPs for a single forward pass. Researchers were hitting a wall where simply stacking more convolutional layers led to diminishing returns and exploding computational requirements. The community needed a way to go deeper without the quadratic increase in computation.",
+    "landmark_solution_details": {
+        "domain": "Deep Learning Architecture Design",
+        "title": "GoogLeNet: Going Deeper with Convolutions",
+        "concept": "Introduce the 'Inception module' that uses parallel convolutions of different sizes (1x1, 3x3, 5x5) and pooling operations, combined with 1x1 convolutions for dimensionality reduction. This allows the network to capture features at multiple scales while keeping computational cost manageable. The architecture is 22 layers deep but only uses 5M parameters (vs 60M for AlexNet) and 1.5B FLOPs (vs 15.5B for VGG).",
+        "math_foundation": "The Inception module is based on the 'Network in Network' concept where 1x1 convolutions act as dimensionality reduction layers. For an input volume of size H\u00d7W\u00d7D, a 1x1 convolution with k filters reduces it to H\u00d7W\u00d7k, reducing computation from O(n\u00b2) to O(n) for subsequent 3x3 or 5x5 convolutions. The total output is the concatenation of all parallel paths.",
+        "implementation": "The architecture stacks Inception modules (v1) with occasional max-pooling layers for downsampling. Each Inception module has: (1) 1x1 conv, (2) 1x1 conv \u2192 3x3 conv, (3) 1x1 conv \u2192 5x5 conv, (4) 3x3 max-pool \u2192 1x1 conv. All outputs are concatenated depth-wise. Auxiliary classifiers at intermediate layers provide additional gradient flow during training. Global average pooling replaces fully connected layers to reduce parameters.",
+        "verification": "GoogLeNet achieved 6.67% top-5 error on ImageNet 2014 classification challenge, surpassing human-level performance (5.1%) and winning the competition. It demonstrated that depth could be increased efficiently without proportional parameter growth, establishing a new paradigm for CNN design.",
+        "inspiration": "Network in Network (1x1 convolutions), Hebbian principle ('neurons that fire together wire together'), and multi-scale processing in biological vision systems."
+    }
+}

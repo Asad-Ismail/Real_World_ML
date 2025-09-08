@@ -1,0 +1,15 @@
+{
+    "solution_name": "VGGNet (Very Deep Convolutional Networks for Large-Scale Image Recognition)",
+    "simplified_problem": "Scaling up convolutional neural network depth with small filters.",
+    "problem_it_solved": "How can we design convolutional neural networks that achieve better image classification accuracy by increasing depth while keeping the architectural design simple and the number of parameters manageable?",
+    "historical_context": "In 2012, AlexNet demonstrated that deep CNNs could achieve breakthrough performance on ImageNet, but its architecture was relatively complex with multiple branches and different filter sizes. Researchers were exploring how to push the boundaries of network depth while maintaining computational efficiency. The prevailing wisdom suggested that larger receptive fields (achieved through large convolutional filters like 11\u00d711 or 7\u00d77) were necessary to capture complex patterns, but this approach led to rapid parameter growth and potential overfitting.",
+    "landmark_solution_details": {
+        "domain": "Computer Vision",
+        "title": "Very Deep Convolutional Networks for Large-Scale Image Recognition",
+        "concept": "Replace large convolutional filters with multiple stacked 3\u00d73 filters. Two 3\u00d73 convolutions have an effective receptive field of 5\u00d75, and three 3\u00d73 convolutions have an effective receptive field of 7\u00d77, but with fewer parameters and more non-linearities. This enables building very deep networks (up to 19 layers) with a homogeneous architecture.",
+        "math_foundation": "Parameter count comparison: a stack of three 3\u00d73 convolutions with C channels has 3\u00d7(3\u00b2C\u00b2) = 27C\u00b2 parameters, while a single 7\u00d77 convolution has 7\u00b2C\u00b2 = 49C\u00b2 parameters. The stacked approach reduces parameters by ~45% while adding more ReLU non-linearities between layers.",
+        "implementation": "Use only 3\u00d73 convolutions throughout the network, with 2\u00d72 max pooling for downsampling. The architecture consists of blocks of 2-4 convolutional layers followed by max pooling, progressively doubling the number of filters from 64 to 512. All hidden layers use ReLU activation.",
+        "verification": "VGG-16 and VGG-19 achieved 7.3% and 7.1% top-5 error rates respectively on ImageNet 2012, significantly improving upon AlexNet's 16.4%. The simple, homogeneous design made VGG architectures widely adopted as feature extractors for other computer vision tasks.",
+        "inspiration": "Classical signal processing principles showing that cascaded small filters can approximate larger filters, combined with the observation that deeper networks with small filters could be more expressive than shallower networks with large filters."
+    }
+}
