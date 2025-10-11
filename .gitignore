@@ -15,3 +15,7 @@
 **wandb/
 **ppo_gpt2**/
  .vscode/
+
+# Claude Code files
+CLAUDE.md
+.claude/
