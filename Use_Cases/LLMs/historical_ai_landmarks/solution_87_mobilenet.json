@@ -1,0 +1,15 @@
+{
+    "solution_name": "MobileNet (MobileNets: Efficient Convolutional Neural Networks for Mobile Vision Applications)",
+    "simplified_problem": "Efficient neural networks for mobile and embedded devices.",
+    "problem_it_solved": "Deep convolutional neural networks like VGG and ResNet achieve high accuracy on computer vision tasks but require billions of operations and hundreds of megabytes of memory, making them impractical for deployment on resource-constrained mobile devices with limited computational power, memory, and battery life.",
+    "historical_context": "In 2016, state-of-the-art CNNs like VGG-16 required ~15.5 billion multiply-accumulate operations (MACs) and 138 million parameters for a single 224\u00d7224 image classification. These models were designed for accuracy without considering computational efficiency, making real-time inference impossible on mobile CPUs and GPUs. The mobile vision community needed architectures that could achieve reasonable accuracy while operating within the strict constraints of mobile hardware (typically <500 million MACs and <50 million parameters).",
+    "landmark_solution_details": {
+        "domain": "Efficient Deep Learning",
+        "title": "MobileNets: Efficient Convolutional Neural Networks for Mobile Vision Applications",
+        "concept": "Replace standard convolutions with depthwise separable convolutions, which factorize a convolution into two steps: (1) a depthwise convolution that applies a single filter per input channel, and (2) a pointwise 1\u00d71 convolution that combines channels. This dramatically reduces computation and parameters while maintaining accuracy.",
+        "math_foundation": "Standard convolution cost: Dk \u00d7 Dk \u00d7 M \u00d7 N \u00d7 Df \u00d7 Df. Depthwise separable convolution cost: (Dk \u00d7 Dk \u00d7 M \u00d7 Df \u00d7 Df) + (M \u00d7 N \u00d7 Df \u00d7 Df). This reduces computation by a factor of approximately 1/N + 1/(Dk\u00b2), where N is number of output channels and Dk is kernel size.",
+        "implementation": "Replace all standard convolutions in a CNN with depthwise separable convolutions. Add two hyperparameters: width multiplier (\u03b1) to thin the network uniformly, and resolution multiplier (\u03c1) to reduce input resolution. This creates a family of models (MobileNet-0.25, 0.5, 0.75, 1.0) trading accuracy for efficiency.",
+        "verification": "MobileNet-1.0 achieved 70.6% ImageNet top-1 accuracy with only 569 million MACs and 4.2 million parameters - 32\u00d7 fewer parameters and 27\u00d7 fewer operations than VGG-16, while maintaining comparable accuracy to AlexNet (69.8%) with 50\u00d7 fewer parameters.",
+        "inspiration": "Factorized convolutions from Inception modules and separable filters from signal processing."
+    }
+}

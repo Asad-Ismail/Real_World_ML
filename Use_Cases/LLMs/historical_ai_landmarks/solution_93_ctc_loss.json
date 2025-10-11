@@ -1,0 +1,15 @@
+{
+    "solution_name": "CTC Loss (Connectionist Temporal Classification: Labelling Unaligned Sequence Data with Recurrent Neural Networks)",
+    "simplified_problem": "Aligning variable-length sequences without manual segmentation.",
+    "problem_it_solved": "Training sequence-to-sequence models where the input and output sequences have different lengths and no frame-level alignment is provided. Traditional supervised learning requires each input timestep to be explicitly labeled, which is impractical for tasks like speech recognition or handwriting recognition where the exact alignment between acoustic frames and characters is unknown and labor-intensive to obtain.",
+    "historical_context": "Before CTC, sequence learning with RNNs faced a critical limitation: to train a model to map an input sequence (e.g., audio frames) to an output sequence (e.g., text), one needed precise alignment between every input timestep and its corresponding output label. This required expensive manual segmentation. HMM-based approaches could handle alignment uncertainty but were limited by strong independence assumptions. Early RNN attempts either required pre-segmented training data or used heuristic approaches like framewise classification followed by post-processing, which performed poorly on variable-length sequences.",
+    "landmark_solution_details": {
+        "domain": "Sequence Modeling",
+        "title": "Connectionist Temporal Classification (CTC)",
+        "concept": "CTC introduces a special 'blank' symbol and allows the network to output a probability distribution over labels plus blank at each timestep. The alignment between input and output sequences is treated as a latent variable. The loss function marginalizes over all possible alignments that could produce the target sequence, enabling training without explicit alignment.",
+        "math_foundation": "Given input sequence X = (x_1, ..., x_T) and target sequence Y = (y_1, ..., y_U), CTC defines a many-to-one mapping B that removes blanks and repeated labels. The probability of Y given X is: P(Y|X) = \u03a3_{\u03c0\u2208B^{-1}(Y)} P(\u03c0|X), where \u03c0 is a path through the network outputs. The CTC loss is -log P(Y|X), computed efficiently using dynamic programming with forward-backward algorithm.",
+        "implementation": "The network outputs a softmax over |L|+1 classes (labels + blank) at each timestep. During training, the CTC loss is computed by summing over all valid paths using dynamic programming. During inference, beam search with CTC scoring finds the most probable label sequence. The blank symbol allows the network to 'wait' without outputting a label.",
+        "verification": "CTC enabled end-to-end training of RNNs for speech recognition without alignment, achieving competitive results on TIMIT phoneme recognition (19.3% PER) and Wall Street Journal word recognition (30.1% WER), demonstrating that RNNs could learn alignments automatically from unsegmented data.",
+        "inspiration": "Hidden Markov Models (HMMs) and dynamic programming for sequence alignment."
+    }
+}

@@ -1,0 +1,15 @@
+{
+    "solution_name": "Batch Normalization (Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift)",
+    "simplified_problem": "Stabilizing and accelerating deep network training",
+    "problem_it_solved": "Deep neural networks suffer from \"internal covariate shift\" - the distribution of each layer's inputs changes during training as the parameters of previous layers update. This forces each layer to continuously adapt to new input distributions, slowing training and requiring careful initialization and small learning rates. The problem is particularly severe for deep networks where these shifts compound across layers.",
+    "historical_context": "Before 2015, training very deep networks required careful initialization schemes (like Xavier/Glorot initialization), small learning rates, and techniques like dropout for regularization. Networks would often get stuck in poor local minima or require extensive hyperparameter tuning. The community understood that changes in layer input distributions were problematic, but lacked a systematic way to address this beyond careful initialization and architectural choices. Training deeper networks meant exponentially more careful tuning and longer training times.",
+    "landmark_solution_details": {
+        "domain": "Deep Learning Optimization",
+        "title": "Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift",
+        "concept": "Normalize the inputs to each layer to have zero mean and unit variance, computed over each mini-batch. This reduces internal covariate shift and allows for much higher learning rates. The normalization is followed by learnable parameters (scale and shift) that allow the network to recover the original distribution if needed.",
+        "math_foundation": "For a mini-batch B = {x_1...m}, compute: \u03bc_B = (1/m)\u2211x_i, \u03c3\u00b2_B = (1/m)\u2211(x_i - \u03bc_B)\u00b2. Then normalize: x\u0302_i = (x_i - \u03bc_B)/\u221a(\u03c3\u00b2_B + \u03b5). Finally, apply learnable parameters: y_i = \u03b3x\u0302_i + \u03b2. During inference, use running averages of \u03bc and \u03c3\u00b2 computed during training.",
+        "implementation": "Insert Batch Normalization layers before or after the activation function in deep networks. The layer maintains running statistics during training and uses these for inference. Can be applied to fully connected layers (normalizing across batch dimension) and convolutional layers (normalizing across batch and spatial dimensions).",
+        "verification": "Batch Normalization enabled training of much deeper networks (like Inception-v3) with significantly faster convergence. On ImageNet, a Batch Normalized Inception network achieved the same accuracy as the original with 14x fewer training steps, and surpassed the original's final accuracy by a significant margin.",
+        "inspiration": "Whitening techniques in optimization and the observation that network inputs should be normalized for faster convergence."
+    }
+}

@@ -1,0 +1,15 @@
+{
+    "solution_name": "Random Forest (Random Forests)",
+    "simplified_problem": "Reducing overfitting in decision tree ensembles.",
+    "problem_it_solved": "Single decision trees, while interpretable and easy to train, suffer from high variance\u2014they are extremely sensitive to small changes in the training data, leading to poor generalization performance and overfitting, especially on noisy datasets.",
+    "historical_context": "In the late 1990s, ensemble methods like Bagging (Bootstrap Aggregating) had shown promise for reducing variance by training multiple models on different bootstrap samples of the data and averaging their predictions. However, simply averaging many deep decision trees still risked overfitting, as the trees could become highly correlated when the same strong predictors were selected at each split. Researchers sought a way to decorrelate the trees while maintaining the variance-reduction benefits of ensemble learning.",
+    "landmark_solution_details": {
+        "domain": "Ensemble Learning",
+        "title": "Random Forests",
+        "concept": "An ensemble of decision trees where each tree is trained on a bootstrap sample of the data, and at each split, only a random subset of features is considered. This 'double randomness'\u2014random data sampling plus random feature selection\u2014decorrelates the trees, making the ensemble more robust and reducing overfitting compared to a single tree or standard bagging.",
+        "math_foundation": "The prediction is an average (for regression) or majority vote (for classification) over B trees: f\u0302(x) = (1/B) \u03a3_{b=1}^B T_b(x). Each tree T_b is grown on a bootstrap sample D_b drawn with replacement from the original data. At each node, the split is chosen from \u230a\u221ap\u230b randomly selected features (for classification) or \u230ap/3\u230b features (for regression), where p is the total number of features.",
+        "implementation": "1. For b = 1 to B: (a) Draw a bootstrap sample of size N from training data. (b) Grow an unpruned CART tree: at each node, randomly select m_try features and pick the best split among them. 2. Output the ensemble {T_b}. 3. For prediction, aggregate the trees' outputs. Out-of-bag (OOB) samples (not selected in bootstrap) provide an unbiased estimate of generalization error without a separate validation set.",
+        "verification": "On benchmark datasets like the UCI repository, Random Forests consistently achieved lower test error than single CART trees and often outperformed bagged trees. For example, on the Satimage dataset, Random Forest achieved ~8.6% error vs. ~12.4% for a single tree. The method also provided feature importance scores via Gini impurity reduction and OOB error estimates.",
+        "inspiration": "Bootstrap Aggregating (Bagging) and the observation that injecting randomness into the learning process could improve generalization."
+    }
+}

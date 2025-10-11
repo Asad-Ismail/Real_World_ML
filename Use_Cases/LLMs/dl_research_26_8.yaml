@@ -1,0 +1,110 @@
+landmark_solutions_to_document:
+  # Foundational Landmarks
+  - "ResNet (Deep Residual Learning for Image Recognition)"
+  - "Attention Is All You Need (Transformer)"
+  - "GAN (Generative Adversarial Networks)"
+  - "Adam: A Method for Stochastic Optimization"
+  - "Word2Vec (Efficient Estimation of Word Representations in Vector Space)"
+  - "DQN (Playing Atari with Deep Reinforcement Learning)"
+
+  # Foundational Computer Vision
+  - "AlexNet (ImageNet Classification with Deep Convolutional Neural Networks)"
+  - "VGGNet (Very Deep Convolutional Networks for Large-Scale Image Recognition)"
+  - "GoogLeNet (Going Deeper with Convolutions)"
+
+  # Object Detection
+  - "Faster R-CNN (Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks)"
+  - "YOLO (You Only Look Once: Unified, Real-Time Object Detection)"
+
+  # Image Segmentation & 3D Vision
+  - "U-Net (U-Net: Convolutional Networks for Biomedical Image Segmentation)"
+  - "NeRF (NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis)"
+
+  # Foundational NLP
+  - "BERT (BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding)"
+  - "GPT (Improving Language Understanding by Generative Pre-Training)"
+
+  # Foundational Generative Models
+  - "VAE (Auto-Encoding Variational Bayes)"
+  - "DDPM (Denoising Diffusion Probabilistic Models)"
+
+  # Reinforcement Learning Landmarks
+  - "AlphaGo (Mastering the game of Go with deep neural networks and tree search)"
+  - "PPO (Proximal Policy Optimization Algorithms)"
+
+  # Core Techniques
+  - "Dropout (Dropout: A Simple Way to Prevent Neural Networks from Overfitting)"
+
+  # Advances in Computer Vision
+  - "Mask R-CNN (Mask R-CNN)"
+  - "Inception-v3 (Rethinking the Inception Architecture for Computer Vision)"
+  - "DenseNet (Densely Connected Convolutional Networks)"
+  - "Vision Transformer (An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale)"
+  - "SSD (SSD: Single Shot MultiBox Detector)"
+  - "FPN (Feature Pyramid Networks for Object Detection)"
+  - "SqueezeNet (SqueezeNet: AlexNet-level accuracy with 50x fewer parameters and <0.5MB model size)"
+
+  # Advances in NLP (LLM Era)
+  - "GPT-2 (Language Models are Unsupervised Multitask Learners)"
+  - "GPT-3 (Language Models are Few-Shot Learners)"
+  - "T5 (Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer)"
+  - "RoBERTa (RoBERTa: A Robustly Optimized BERT Pretraining Approach)"
+  - "Scaling Laws for Neural Language Models (Scaling Laws for Neural Language Models)"
+  - "Longformer (Longformer: The Long-Document Transformer)"
+
+  # Generative Models: New Frontiers
+  - "StyleGAN (A Style-Based Generator Architecture for Generative Adversarial Networks)"
+  - "Latent Diffusion Models (High-Resolution Image Synthesis with Latent Diffusion Models)"
+  - "WaveNet (WaveNet: A Generative Model for Raw Audio)"
+  - "VQ-VAE (Neural Discrete Representation Learning)"
+  - "Glow (Glow: Generative Flow with Invertible 1x1 Convolutions)"
+
+  # Reinforcement Learning: Deepening Foundations
+  - "A3C (Asynchronous Methods for Deep Reinforcement Learning)"
+  - "SAC (Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Actor)"
+  - "MuZero (Mastering Atari, Go, Chess and Shogi by Planning with a Learned Model)"
+
+  # Self-Supervised & Unsupervised Learning
+  - "SimCLR (A Simple Framework for Contrastive Learning of Visual Representations)"
+  - "MoCo (Momentum Contrast for Unsupervised Visual Representation Learning)"
+  - "BYOL (Bootstrap Your Own Latent: A New Approach to Self-Supervised Learning)"
+  - "DINO (Emerging Properties in Self-Supervised Vision Transformers)"
+
+  # Graph Neural Networks
+  - "GCN (Semi-Supervised Classification with Graph Convolutional Networks)"
+  - "GraphSAGE (Inductive Representation Learning on Large Graphs)"
+  - "GAT (Graph Attention Networks)"
+
+  # Tabular Data & Kaggle Hallmarks
+  - "XGBoost (XGBoost: A Scalable Tree Boosting System)"
+  - "LightGBM (LightGBM: A Highly Efficient Gradient Boosting Decision Tree)"
+  - "Netflix Prize - Matrix Factorization (Matrix Factorization Techniques for Recommender Systems)"
+  - "Mercari Price Suggestion (Kaggle winning solution combining TF-IDF, embeddings, and LightGBM)"
+  - "TabNet (TabNet: Attentive Interpretable Tabular Learning)"
+
+  # Recommender Systems
+  - "Neural Collaborative Filtering (Neural Collaborative Filtering)"
+  - "YouTube Recommendations (Deep Neural Networks for YouTube Recommendations)"
+
+  # Explainability & Interpretability
+  - "LIME ('Why Should I Trust You?': Explaining the Predictions of Any Classifier)"
+  - "SHAP (A Unified Approach to Interpreting Model Predictions)"
+  - "Grad-CAM (Grad-CAM: Visual Explanations from Deep Networks via Gradient-based Localization)"
+
+  # Novel Architectures, Multimodality, Meta-Learning
+  - "CLIP (Learning Transferable Visual Models From Natural Language Supervision)"
+  - "MAML (Model-Agnostic Meta-Learning for Fast Adaptation of Deep Networks)"
+  - "Siamese Networks (Learning a Similarity Metric Discriminatively, with Application to Face Verification)"
+
+  # AI for Science
+  - "AlphaFold 2 (Highly accurate protein structure prediction with AlphaFold)"
+  - "PINNs (Physics-informed neural networks: A deep learning framework for solving forward and inverse problems involving nonlinear partial differential equations)"
+
+  # Core Techniques & Optimization
+  - "Batch Normalization (Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift)"
+  - "Layer Normalization (Layer Normalization)"
+  - "AdamW (Decoupled Weight Decay Regularization)"
+  - "Random Forest (Random Forests)"
+  - "ReLU (Rectified Linear Units Improve Restricted Boltzmann Machines)"
+  - "GloVe (GloVe: Global Vectors for Word Representation)"
+  - "U-Net++ (UNet++: A Nested U-Net Architecture for Medical Image Segmentation)"

@@ -1,0 +1,15 @@
+{
+    "solution_name": "NeRF (NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis)",
+    "simplified_problem": "Novel view synthesis from sparse 2D images",
+    "problem_it_solved": "Given a sparse set of 2D images of a scene from different viewpoints, how can we synthesize novel views from arbitrary camera positions that are photorealistic and maintain view-dependent effects like reflections and transparency, without requiring explicit 3D geometry reconstruction?",
+    "historical_context": "Before NeRF, novel view synthesis relied on techniques like light field rendering, which required dense sampling of viewpoints, or structure-from-motion followed by mesh reconstruction and texture mapping. These approaches struggled with complex geometry, non-Lambertian surfaces, and view-dependent effects. Neural approaches existed but typically represented scenes as discrete voxel grids or meshes, leading to memory inefficiency and difficulty capturing fine details. The field needed a method that could represent continuous 3D scenes compactly while preserving high-frequency details and view-dependent appearance.",
+    "landmark_solution_details": {
+        "domain": "3D Computer Vision and Neural Rendering",
+        "title": "NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis",
+        "concept": "Represent a 3D scene as a continuous 5D function (3D position + 2D viewing direction) parameterized by a neural network. The network outputs volume density and view-dependent RGB color at each point. Novel views are rendered by marching camera rays through the scene and accumulating color/density along each ray using classical volume rendering techniques.",
+        "math_foundation": "The neural network F_\u0398: (x, d) \u2192 (c, \u03c3) maps 3D position x and viewing direction d to RGB color c and volume density \u03c3. Rendering uses volume rendering equation: C(r) = \u222b[T(t)\u03c3(r(t))c(r(t),d)dt] where T(t) = exp(-\u222b[\u03c3(r(s))ds]). The integral is approximated via stratified sampling and alpha compositing.",
+        "implementation": "A simple MLP with ReLU activations takes 3D coordinates and viewing directions as input. Positional encoding (sinusoidal functions) is applied to inputs to enable learning high-frequency details. Training uses gradient descent to minimize photometric loss between rendered and ground truth pixels. Hierarchical sampling (coarse and fine networks) improves efficiency.",
+        "verification": "NeRF achieved state-of-the-art results on novel view synthesis benchmarks, producing photorealistic renderings that preserved fine geometric details and view-dependent effects. On the LLFF dataset, it achieved 29.62 PSNR compared to 24.15 for previous best methods.",
+        "inspiration": "Classical volume rendering techniques from computer graphics combined with coordinate-based neural representations."
+    }
+}

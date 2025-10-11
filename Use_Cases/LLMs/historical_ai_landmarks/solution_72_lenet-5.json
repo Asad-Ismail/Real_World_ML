@@ -1,0 +1,15 @@
+{
+    "solution_name": "LeNet-5 (Gradient-Based Learning Applied to Document Recognition)",
+    "simplified_problem": "Handwritten digit recognition with convolutional neural networks.",
+    "problem_it_solved": "How can we build a system that automatically recognizes handwritten digits (like those on bank checks or postal envelopes) with high accuracy, while being robust to variations in writing style, stroke thickness, and digit placement, using a unified learning approach that can be trained end-to-end?",
+    "historical_context": "In the early 1990s, character recognition systems typically relied on hand-crafted features combined with traditional classifiers. Methods included template matching, feature extraction using techniques like zoning, moments, or structural features, followed by classifiers like k-NN, decision trees, or multi-layer perceptrons. These systems required extensive manual feature engineering, were brittle to variations in handwriting, and often needed separate preprocessing stages for normalization, segmentation, and noise reduction. The field was moving toward more automated approaches, but neural networks at the time were mostly fully-connected architectures that didn't exploit the spatial structure of images efficiently.",
+    "landmark_solution_details": {
+        "domain": "Computer Vision / Pattern Recognition",
+        "title": "LeNet-5: Gradient-Based Learning Applied to Document Recognition",
+        "concept": "A convolutional neural network architecture specifically designed for handwritten character recognition that learns hierarchical features directly from pixel data. It combines convolutional layers for feature extraction with subsampling layers for spatial invariance, followed by fully-connected layers for classification, all trained end-to-end using backpropagation.",
+        "math_foundation": "The network implements discrete convolution operations: (I * K)(i,j) = \u03a3_m \u03a3_n I(i+m, j+n) K(m,n), where I is the input image and K is the learned kernel. Subsampling layers use average pooling to reduce spatial dimensions while maintaining approximate invariance to small translations. The final classification uses softmax: p_i = exp(z_i) / \u03a3_j exp(z_j) for class probabilities.",
+        "implementation": "Architecture: C1 (6@28\u00d728) \u2192 S2 (6@14\u00d714) \u2192 C3 (16@10\u00d710) \u2192 S4 (16@5\u00d75) \u2192 C5 (120) \u2192 F6 (84) \u2192 Output (10). C1 and C3 are convolutional layers with 5\u00d75 kernels. S2 and S4 are subsampling layers with 2\u00d72 average pooling. C5 and F6 are fully-connected. Uses tanh activation functions and learns with stochastic gradient descent.",
+        "verification": "Achieved 0.95% error rate on MNIST test set (10,000 digits), significantly outperforming traditional methods. Successfully deployed in commercial systems for reading handwritten digits on bank checks, processing millions of checks daily with high reliability.",
+        "inspiration": "Neuroscience (receptive fields in visual cortex) and earlier work on neocognitron by Fukushima."
+    }
+}

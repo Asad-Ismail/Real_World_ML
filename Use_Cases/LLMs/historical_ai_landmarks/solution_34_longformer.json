@@ -1,0 +1,15 @@
+{
+    "solution_name": "Longformer (Longformer: The Long-Document Transformer)",
+    "simplified_problem": "Efficient attention for long sequences.",
+    "problem_it_solved": "The standard Transformer architecture uses self-attention that scales quadratically O(n\u00b2) with sequence length, making it computationally infeasible to process documents with tens of thousands of tokens (e.g., scientific papers, books, or long legal documents) due to memory and time constraints.",
+    "historical_context": "By 2020, Transformers had become the dominant architecture for NLP tasks, but their quadratic attention bottleneck limited practical applications to sequences of ~512\u20131024 tokens. Researchers tried chunking documents into smaller segments, but this broke long-range dependencies. Sparse attention patterns had been proposed (e.g., Sparse Transformers), yet they were either hand-crafted or still too memory-intensive. There was a clear need for an attention mechanism that could scale linearly with sequence length while preserving the ability to model global context.",
+    "landmark_solution_details": {
+        "domain": "Natural Language Processing",
+        "title": "Longformer: The Long-Document Transformer",
+        "concept": "Replace the dense, quadratic self-attention of the Transformer with a sparse attention pattern that combines local sliding-window attention (capturing nearby context) with a small set of global attention tokens (capturing document-level context). This yields linear O(n) complexity in both memory and time.",
+        "math_foundation": "Let A \u2208 \u211d^{n\u00d7n} be the attention matrix. Instead of computing all n\u00b2 entries, Longformer masks A to three sparse patterns: (1) Sliding-window: A_{i,j}=1 if |i\u2212j| \u2264 w/2 for window size w. (2) Dilated sliding-window: skip every d-th position to enlarge receptive field. (3) Global attention: for a small set G of indices, A_{i,j}=1 for all j\u2208G and A_{j,i}=1 for all i. The resulting attention is computed only over non-zero entries, reducing complexity from O(n\u00b2) to O(n\u00b7w + n\u00b7|G|).",
+        "implementation": "Modify the multi-head self-attention layer in the Transformer encoder. Each head uses a custom CUDA kernel that implements the sparse patterns efficiently. Global attention positions are task-specific: e.g., <s> token for classification, all question tokens in QA. The rest of the architecture (feed-forward, layer-norm, residual connections) remains unchanged. Pre-training uses masked-language-modeling on long documents (up to 16 384 tokens).",
+        "verification": "Longformer achieved SOTA results on long-document tasks: 94.9 F1 on Hyperpartisan news classification (4k tokens), 63.5 F1 on WikiHop multi-hop QA (4k tokens), and 56.9 F1 on TriviaQA (8k tokens), while using 4\u00d7 less memory and 3\u00d7 less time than a full-attention Transformer of comparable depth.",
+        "inspiration": "Sparse matrix operations and prior work on local receptive fields in CNNs."
+    }
+}

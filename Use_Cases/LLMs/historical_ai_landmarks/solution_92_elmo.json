@@ -1,0 +1,15 @@
+{
+    "solution_name": "ELMo (Deep contextualized word representations)",
+    "simplified_problem": "Context-sensitive word representations.",
+    "problem_it_solved": "Traditional word embeddings (e.g., Word2Vec, GloVe) assign a single, fixed vector to each word regardless of its context, making them unable to capture polysemy or nuanced meaning. This limitation hurts performance on downstream NLP tasks that require deep understanding of word usage in context.",
+    "historical_context": "Before 2018, the dominant approach to word representation was static embeddings like Word2Vec and GloVe. These methods learned a single vector per word type from large corpora, which worked well for many tasks but fundamentally failed to handle words with multiple meanings (e.g., \"bank\" as financial institution vs. river bank). Contextualized representations existed in the form of task-specific LSTM models, but these were trained end-to-end for specific tasks and couldn't provide general-purpose word representations that could be easily transferred to new tasks.",
+    "landmark_solution_details": {
+        "domain": "Natural Language Processing",
+        "title": "Deep contextualized word representations (ELMo)",
+        "concept": "Instead of using fixed word vectors, ELMo (Embeddings from Language Models) generates word representations that are functions of the entire input sentence. It uses a bidirectional LSTM trained on a language modeling objective to produce context-dependent embeddings that capture both syntactic and semantic information.",
+        "math_foundation": "ELMo computes representations as: ELMo_k = \u03b3 * \u03a3(s_j * h_{k,j}) for j=0 to L, where h_{k,j} are the hidden states from all L layers of the bidirectional LSTM at position k, and s_j are learned task-specific weights. The \u03b3 parameter allows the model to scale the entire ELMo vector.",
+        "implementation": "A deep bidirectional LSTM language model is pre-trained on large text corpora. For each word in a sentence, the model uses the concatenation of forward and backward LSTM hidden states from all layers. These representations are then used as features in downstream tasks, with the weights s_j and \u03b3 optionally fine-tuned during task-specific training.",
+        "verification": "ELMo achieved significant improvements across multiple NLP benchmarks: 5.7% absolute improvement in F1 on SQuAD question answering, 1.2% on SNLI entailment, and 1.9% on Coreference resolution, demonstrating the value of contextualized representations.",
+        "inspiration": "Neural Language Modeling (using LSTMs for next-word prediction) and the idea that higher-level LSTM layers capture more abstract linguistic properties."
+    }
+}

@@ -1,0 +1,15 @@
+{
+    "solution_name": "YOLO (You Only Look Once: Unified, Real-Time Object Detection)",
+    "simplified_problem": "Real-time object detection in images.",
+    "problem_it_solved": "Object detection systems at the time required multiple stages: first generating region proposals (like Selective Search), then classifying each proposed region with a CNN, and finally applying post-processing like non-maximum suppression. This multi-stage pipeline was slow (taking seconds per image), complex to train, and couldn't achieve real-time performance needed for applications like autonomous driving or video analysis.",
+    "historical_context": "Before YOLO, the dominant approaches were R-CNN variants (R-CNN, Fast R-CNN, Faster R-CNN). These methods used a two-stage approach: (1) a region proposal network or algorithm would generate ~2000 candidate object regions per image, and (2) a CNN would classify each region. While accurate, this approach was computationally expensive - Faster R-CNN took ~200ms per image on a GPU. Single-stage detectors like OverFeat existed but were less accurate. The field needed a unified approach that could achieve both high speed and reasonable accuracy.",
+    "landmark_solution_details": {
+        "domain": "Computer Vision",
+        "title": "You Only Look Once: Unified, Real-Time Object Detection",
+        "concept": "Reframe object detection as a single regression problem. Instead of using region proposals, divide the input image into an S\u00d7S grid. Each grid cell predicts B bounding boxes and C class probabilities directly from full images in one evaluation. This unified architecture enables end-to-end training and real-time inference.",
+        "math_foundation": "The model outputs an S\u00d7S\u00d7(B\u00d75 + C) tensor. For each grid cell: (x, y, w, h, confidence) \u00d7 B boxes + C class probabilities. The loss function combines localization loss (L2 for box coordinates), confidence loss (IOU-weighted), and classification loss (cross-entropy): L = \u03bb_coord \u03a3 (x-x\u0302)\u00b2 + \u03bb_noobj \u03a3 (C-\u0108)\u00b2 + \u03a3 (p-p\u0302)\u00b2.",
+        "implementation": "A single CNN architecture (24 convolutional layers + 2 fully connected) takes a 448\u00d7448 image as input and outputs a 7\u00d77\u00d730 tensor (S=7, B=2, C=20 for PASCAL VOC). Each grid cell predicts 2 boxes and 20 class probabilities. Non-maximum suppression removes duplicate detections. Training uses ImageNet pretraining followed by detection fine-tuning.",
+        "verification": "YOLO achieved 63.4% mAP on PASCAL VOC 2007 while running at 45 FPS on a Titan X GPU, significantly faster than Faster R-CNN (73.2% mAP at 7 FPS) and Fast R-CNN (39.3% mAP at 0.5 FPS). This demonstrated the first real-time object detector with reasonable accuracy.",
+        "inspiration": "Single-shot detection concepts from OverFeat, but unified into a single neural network without region proposals."
+    }
+}

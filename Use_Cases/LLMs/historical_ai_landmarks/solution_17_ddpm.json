@@ -1,0 +1,15 @@
+{
+    "solution_name": "DDPM (Denoising Diffusion Probabilistic Models)",
+    "simplified_problem": "High-quality generative modeling through iterative denoising.",
+    "problem_it_solved": "Training generative models that produce sharp, diverse samples while maintaining stable training dynamics was challenging. Existing approaches like GANs suffered from training instability and mode collapse, while VAEs produced blurry samples. There was a need for a principled probabilistic framework that could generate high-quality samples without adversarial training.",
+    "historical_context": "By 2020, GANs had become the dominant approach for high-fidelity image generation, but they were notoriously difficult to train due to mode collapse and training instability. VAEs provided a stable alternative but suffered from poor sample quality due to their restrictive likelihood-based objective. Flow-based models offered exact likelihood computation but were computationally expensive and struggled with high-dimensional data. The field needed a new paradigm that could combine the stability of likelihood-based methods with the sample quality of GANs.",
+    "landmark_solution_details": {
+        "domain": "Generative Modeling",
+        "title": "Denoising Diffusion Probabilistic Models",
+        "concept": "A two-stage generative process that learns to generate data by reversing a diffusion process. The forward process gradually adds noise to data until it becomes nearly pure Gaussian noise. The reverse process learns to denoise data step-by-step, starting from pure noise and iteratively removing noise to generate high-quality samples.",
+        "math_foundation": "The forward process is a fixed Markov chain that adds Gaussian noise: q(x_t|x_{t-1}) = N(x_t; sqrt(1-\u03b2_t)x_{t-1}, \u03b2_t I). The reverse process is learned: p_\u03b8(x_{t-1}|x_t) = N(x_{t-1}; \u03bc_\u03b8(x_t, t), \u03a3_\u03b8(x_t, t)). Training minimizes the variational lower bound: L = E_q[D_KL(q(x_T|x_0) || p(x_T)) + \u03a3_{t=1}^T D_KL(q(x_{t-1}|x_t, x_0) || p_\u03b8(x_{t-1}|x_t))].",
+        "implementation": "A U-Net architecture is trained to predict the noise added at each timestep. The model takes noisy data x_t and timestep t as input, and outputs the predicted noise \u03b5_\u03b8(x_t, t). Sampling involves starting from pure Gaussian noise x_T ~ N(0, I) and iteratively denoising using the learned reverse process: x_{t-1} = (1/\u221a\u03b1_t)(x_t - (1-\u03b1_t)/\u221a(1-\u03b1\u0304_t) \u03b5_\u03b8(x_t, t)) + \u03c3_t z, where z ~ N(0, I).",
+        "verification": "DDPM achieved FID scores of 3.17 on CIFAR-10 and 2.92 on CelebA-HQ 256x256, demonstrating high-quality sample generation comparable to GANs while maintaining stable training. The method also enabled exact log-likelihood computation and showed no mode collapse.",
+        "inspiration": "Non-equilibrium thermodynamics and annealed importance sampling."
+    }
+}

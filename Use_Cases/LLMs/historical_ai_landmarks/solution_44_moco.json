@@ -1,0 +1,15 @@
+{
+    "solution_name": "MoCo (Momentum Contrast for Unsupervised Visual Representation Learning)",
+    "simplified_problem": "Learning visual representations without labels",
+    "problem_it_solved": "How can we learn powerful visual representations from unlabeled images without relying on human annotations, such that these representations can effectively transfer to downstream tasks like object detection and segmentation?",
+    "historical_context": "Before MoCo, unsupervised visual representation learning lagged far behind supervised pre-training. Methods like autoencoders or clustering-based approaches produced features that transferred poorly to downstream tasks. The breakthrough came with contrastive learning, which learns representations by distinguishing between similar (positive) and dissimilar (negative) image pairs. However, existing contrastive learning methods faced a critical limitation: they required large batch sizes (thousands of images) to maintain a sufficient set of negative samples, making training computationally expensive and memory-intensive. This constraint limited both the scale of training and accessibility for researchers with limited resources.",
+    "landmark_solution_details": {
+        "domain": "Unsupervised Learning",
+        "title": "Momentum Contrast for Unsupervised Visual Representation Learning",
+        "concept": "Maintain a large, consistent dictionary of negative samples using a momentum-updated encoder, decoupling the dictionary size from the mini-batch size. The key encoder is updated as a moving average of the query encoder, ensuring smooth evolution of representations while maintaining consistency between keys.",
+        "math_foundation": "The momentum update follows: \u03b8_k \u2190 m\u03b8_k + (1-m)\u03b8_q, where m \u2208 [0,1) is the momentum coefficient (typically 0.999), \u03b8_k and \u03b8_q are parameters of key and query encoders respectively. The contrastive loss is InfoNCE: L_q = -log(exp(q\u00b7k+/\u03c4) / \u03a3 exp(q\u00b7k_i/\u03c4)), where q is query, k+ is positive key, k_i are negative keys, and \u03c4 is temperature.",
+        "implementation": "Two encoders share the same architecture: a query encoder (updated by backpropagation) and a key encoder (updated by momentum). A queue stores representations from previous mini-batches as negative samples. For each query, the positive key comes from a different augmentation of the same image, while negative keys come from the queue. The queue size can be much larger than the batch size (e.g., 65,536 vs 256).",
+        "verification": "MoCo achieved 60.6% accuracy on ImageNet linear classification protocol, surpassing previous unsupervised methods by 7-10%. When fine-tuned on PASCAL VOC object detection, MoCo pre-trained features achieved 81.5% AP50, closing the gap with supervised pre-training (82.0% AP50) to just 0.5%.",
+        "inspiration": "Dictionary look-up in natural language processing and momentum-based parameter updates in optimization."
+    }
+}

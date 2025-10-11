@@ -1,0 +1,15 @@
+{
+    "solution_name": "RMSprop (Hinton, Lecture 6.5, COURSERA)",
+    "simplified_problem": "Adaptive learning rates for non-stationary objectives.",
+    "problem_it_solved": "Stochastic gradient descent (SGD) with a fixed global learning rate struggles to converge efficiently on non-stationary objectives or when gradients are sparse and highly varying in magnitude. The same learning rate is applied to all parameters regardless of their update history, causing oscillations in directions with consistently large gradients and painfully slow progress in directions with small or infrequent gradients.",
+    "historical_context": "By 2012, deep networks were exploding in size and were being trained on ever-larger datasets. Vanilla SGD required extensive manual tuning of learning-rate schedules and often failed to make progress on problems such as training RNNs on long sequences, where gradients vanish or explode. AdaGrad (2011) had introduced per-parameter learning rates that adapted based on the historical sum of squared gradients, but its monotonically decreasing learning rates eventually became so small that training virtually stopped. The community needed an optimizer that could keep adapting without grinding to a halt.",
+    "landmark_solution_details": {
+        "domain": "Optimization for Deep Learning",
+        "title": "RMSprop (unpublished, Lecture 6.5, Neural Networks for Machine Learning, Coursera)",
+        "concept": "Maintain a running (exponentially decaying) average of the squared gradient for each parameter, and scale the current gradient by the inverse of the root-mean-square (RMS) of these past squared gradients. This yields an adaptive learning rate that can increase again when gradients become small, avoiding the monotonic decay of AdaGrad.",
+        "math_foundation": "Let g_t be the gradient at step t. The second-moment estimate is updated as v_t = \u03c1 v_{t-1} + (1-\u03c1) g_t\u00b2 with decay factor \u03c1 (typically 0.9). The parameter update is \u03b8_{t+1} = \u03b8_t - (\u03b7 / \u221a(v_t + \u03b5)) g_t, where \u03b7 is the global learning rate and \u03b5 is a small constant (\u224810\u207b\u2078) for numerical stability.",
+        "implementation": "For every parameter, keep an accumulator variable initialized to zero. During each backward pass, square the current gradient, update the accumulator with the exponential moving average, then divide the learning rate by the square root of the accumulator before applying the update. The entire procedure adds only a few element-wise operations per parameter.",
+        "verification": "In Geoffrey Hinton\u2019s 2012 Coursera lecture, RMSprop was shown to allow an RNN language model to continue learning on the Penn Treebank dataset long after AdaGrad\u2019s effective learning rate had collapsed to near-zero. Subsequent community adoption confirmed faster convergence and better final performance on tasks ranging from image classification to reinforcement learning.",
+        "inspiration": "AdaGrad (per-parameter adaptive rates) and the idea of exponential moving averages from signal processing."
+    }
+}

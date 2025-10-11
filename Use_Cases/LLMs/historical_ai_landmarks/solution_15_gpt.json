@@ -1,0 +1,15 @@
+{
+    "solution_name": "GPT (Improving Language Understanding by Generative Pre-Training)",
+    "simplified_problem": "Effective transfer learning for natural language understanding",
+    "problem_it_solved": "How can we leverage large amounts of unlabeled text data to create a general-purpose language model that can then be fine-tuned for specific downstream NLP tasks with minimal task-specific architecture changes and limited labeled data?",
+    "historical_context": "Before GPT, NLP models were typically trained from scratch for each specific task using task-specific architectures and supervised learning. This approach required large amounts of labeled data for each task, which was expensive and time-consuming to obtain. While word embeddings like Word2Vec and GloVe provided some transfer learning benefits, they were limited to capturing shallow syntactic and semantic relationships. ELMo introduced contextualized word representations using bidirectional LSTMs, but still required task-specific architectures on top. The field lacked a unified framework that could leverage the vast amounts of unlabeled text available on the internet to create a general language understanding system.",
+    "landmark_solution_details": {
+        "domain": "Natural Language Processing",
+        "title": "Improving Language Understanding by Generative Pre-Training",
+        "concept": "A two-stage framework: (1) Unsupervised pre-training on large text corpora using a language modeling objective to learn general language representations, followed by (2) supervised fine-tuning on downstream tasks with minimal task-specific modifications. The model learns to predict the next word in a sequence, capturing rich linguistic patterns and world knowledge from unlabeled text.",
+        "math_foundation": "Pre-training objective: maximize the log-likelihood of the next token given previous tokens: L\u2081(\u0398) = \u03a3\u1d62 log P(u\u1d62|u\u1d62\u208b\u2096,...,u\u1d62\u208b\u2081; \u0398). Fine-tuning objective: L\u2082(C) = \u03a3\u208d\u2093,\u1d67\u208e log P(y|x\u00b9,...,x\u1d50) + \u03bbL\u2081(C), where C is the labeled dataset and \u03bb controls the strength of language modeling as an auxiliary objective.",
+        "implementation": "Uses a 12-layer Transformer decoder (with masked self-attention) as the base architecture. For classification tasks, add a linear layer + softmax on top of the final transformer block's output. For multiple-choice tasks, concatenate each choice with the context and run independently. For similarity tasks, encode both sentences and concatenate their representations. Minimal architectural changes required across tasks.",
+        "verification": "Achieved state-of-the-art results on 9 out of 12 NLP benchmarks including GLUE, RACE, and SQuAD, often by large margins. Demonstrated that larger models and more pre-training data consistently improved performance, establishing the scaling laws for language models.",
+        "inspiration": "Semi-supervised learning and transfer learning paradigms from computer vision, combined with the Transformer architecture's success in sequence modeling."
+    }
+}

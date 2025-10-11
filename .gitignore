@@ -19,3 +19,7 @@
 # Claude Code files
 CLAUDE.md
 .claude/
+
+# Project-specific directories
+Use_Cases/LLMs/historical_ai_landmarks/**
+**/anomaly/data/
