@@ -1,101 +1,178 @@
-import numpy as np  
+import re
 from collections import Counter
-import regex as re
-import os
-from typing import BinaryIO
+from typing import List
 
-def find_chunk_boundaries(
-    file: BinaryIO, 
-    desired_num_chunks: int, 
-    split_special_token: bytes
-) -> list[int]:
-    assert isinstance(split_special_token, bytes)
-    file.seek(0, os.SEEK_END)
-    file_size = file.tell()
-    file.seek(0)
-    chunk_size = file_size // desired_num_chunks
-    chunk_boundaries = [i * chunk_size for i in range(desired_num_chunks + 1)]
-    chunk_boundaries[-1] = file_size
-    mini_chunk_size = 4096
-    for bi in range(1, len(chunk_boundaries) - 1):
-        initial_position = chunk_boundaries[bi]
-        file.seek(initial_position)
-        while True:
-            mini_chunk = file.read(mini_chunk_size)
-            if mini_chunk == b"":
-                chunk_boundaries[bi] = file_size
-                break
-            found_at = mini_chunk.find(split_special_token)
-            if found_at != -1:
-                chunk_boundaries[bi] = initial_position + found_at
-                break
-            initial_position += mini_chunk_size
-    return sorted(set(chunk_boundaries))
-
-
-def pre_tokenize(chunk: str):
-    PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
-    counter = Counter()
-    for match in re.finditer(PAT, chunk):
-        token = match.group(0)
-        counter[token] += 1
-    return counter
-
-
-class BPE():
-
-    def __init__(self, vocab_sz=1000, special_tokens=None):
-        self.vocab_sz = vocab_sz
-        self.special_tokens = special_tokens
-        self.merges = []
-        self.ids2bytes = {}
-        self.bytes2ids = {}
-        for i in range(256):
-            self.ids2bytes[i] = bytes([i])
-            self.bytes2ids[bytes([i])] = i
-        for i, token in enumerate(special_tokens, start=256):
-            self.ids2bytes[i] = token.encode("utf-8")
-            self.bytes2ids[token.encode("utf-8")] = i
+class BPE:
+    def __init__(self,vocab_size,special_tokens=["<pad>","<endoftext>"]):
+        self.vocabsize=vocab_size
+        ## vocab maps from bpe to int , initial vocab is 256
+        self.vocab_dict = {i:bytes([i]) for i in range(256)}
+        self.vocab_dict.update({i:token.encode("utf-8") for i, token in enumerate(special_tokens, 256)})
+        # merges will be a list of bytes 
+        self.merges =[]
 
     @staticmethod
-    def pre_tokenize(self, chunk: str):
-        PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
-        counter = Counter()
-        for match in re.finditer(PAT, chunk):
-            token = match.group(0)
-            counter[token] += 1
-        return counter         
+    def _get_Stats(tokens:list[int])->Counter:
+        pairs = Counter(zip(tokens[:-1], tokens[1:]))
+        return pairs
 
-    def train_tokenizer(self, pretokenized: Counter):
-        for token, count in pretokenized.items():
-            if token not in self.bytes2ids:
-                self.bytes2ids[token] = len(self.bytes2ids)
-                self.ids2bytes[len(self.ids2bytes)] = token
-        for token, count in pretokenized.items():
-            if token not in self.bytes2ids:
-                self.bytes2ids[token] = len(self.bytes2ids)
+    @staticmethod
+    def _merge(tokens:list[int],pair:tuple[int,int],new_token:int)->list[int]:
+        # replace all occurrences of pair with new_token
+        new_tokens = []
+        i = 0
+        while i < len(tokens):
+            if tokens[i] == pair[0] and i+1 < len(tokens) and tokens[i+1] == pair[1]:
+                new_tokens.append(new_token)
+                i += 2
+            else:
+                new_tokens.append(tokens[i])
+                i += 1
+        return new_tokens   
+
+    def train(self,text_file:str="data/TinyStoriesV2-GPT4-valid.txt"):
+        with open(text_file,"r") as f:
+            text=f.read().strip()
+        #pre_tokenized = re.findall(r"\s*\w+|\s*\S",text)
+        tokens = list(text.encode("utf-8"))
+
+        while len(self.vocab_dict) < self.vocabsize:
+            print("Current vocabulary size:", len(self.vocab_dict))
+            pairs = BPE._get_Stats(tokens)
+            if not pairs:
+                break
+            best_pair = max(pairs, key=pairs.get)
+            print(best_pair)
+            # replace best token with the new token
+            tokens = BPE._merge(tokens,best_pair,len(self.vocab_dict))
+            first_byte = self.vocab_dict[best_pair[0]]
+            second_byte = self.vocab_dict[best_pair[1]]
+            self.merges.append((first_byte, second_byte))
+            self.vocab_dict[len(self.vocab_dict)] = first_byte + second_byte
+        print("Final vocabulary size:", len(self.vocab_dict))
+
+    def encode(self, text: str) -> List[int]:
+        tokens = list(text.encode("utf-8"))
+        merge_idx = {bytepair: i for i, bytepair in enumerate(self.merges)}
+        inv_dict = {v: k for k, v in self.vocab_dict.items()}
+
+        while len(tokens) > 1:
+            pairs = [(tokens[i], tokens[i+1]) for i in range(len(tokens)-1)]
+            if not pairs:
+                break
+            
+            pair_to_merge = min(
+                pairs, 
+                key=lambda pair: merge_idx.get(
+                    (self.vocab_dict[pair[0]], self.vocab_dict[pair[1]]), 
+                    float("inf")
+                )
+            )
+            
+            bytepair = (self.vocab_dict[pair_to_merge[0]], self.vocab_dict[pair_to_merge[1]])
+            if bytepair not in merge_idx:
+                break
+            
+            merged_token_id = inv_dict[bytepair[0] + bytepair[1]] 
+            tokens = BPE._merge(tokens, pair_to_merge, merged_token_id)
+        
+        return tokens
+    
+
+    def decode(self,input_ids:List[int])->str:
+        bytestr =b"".join([self.vocab_dict[i] for i in input_ids])
+        return bytestr.decode("utf-8", errors="replace")
+    
+
+
+
+class BPEChar:
+    def __init__(self,vocab_size,special_tokens=["<pad>","<endoftext>"]):
+        self.vocabsize=vocab_size
+        ## vocab maps from bpe to int , initial vocab is 256
+        self.vocab_dict = {i:token for i, token in enumerate(special_tokens)}
+        # merges will be a list of bytes 
+        self.merges =[]
+
+    @staticmethod
+    def _get_Stats(tokens:list[int])->Counter:
+        pairs = Counter(zip(tokens[:-1], tokens[1:]))
+        return pairs
+
+    @staticmethod
+    def _merge(tokens:list[int],pair:tuple[int,int],new_token:int)->list[int]:
+        # replace all occurrences of pair with new_token
+        new_tokens = []
+        i = 0
+        while i < len(tokens):
+            if tokens[i] == pair[0] and i+1 < len(tokens) and tokens[i+1] == pair[1]:
+                new_tokens.append(new_token)
+                i += 2
+            else:
+                new_tokens.append(tokens[i])
+                i += 1
+        return new_tokens   
+
+    def train(self,text_file:str="data/TinyStoriesV2-GPT4-valid.txt"):
+        with open(text_file,"r") as f:
+            text=f.read().strip()
+        #pre_tokenized = re.findall(r"\s*\w+|\s*\S",text)
+        tokens = list(text)
+        unique_tokens =set(tokens)
+        for token in unique_tokens:
+            self.vocab_dict[len(self.vocab_dict)] = token
+
+        while len(self.vocab_dict) < self.vocabsize:
+            print("Current vocabulary size:", len(self.vocab_dict))
+            pairs = BPEChar._get_Stats(tokens)
+            if not pairs:
+                break
+            best_pair = max(pairs, key=pairs.get)
+            print(best_pair)
+            # replace best token with the new token
+            tokens = BPEChar._merge(tokens,best_pair,best_pair[0]+best_pair[1])
+            self.merges.append((best_pair[0], best_pair[1]))
+            self.vocab_dict[len(self.vocab_dict)] = best_pair[0] + best_pair[1]
+        print("Final vocabulary size:", len(self.vocab_dict))
+
+    def encode(self, text: str) -> List[int]:
+        tokens = list(text)
+        merge_idx = {pair: i for i, pair in enumerate(self.merges)}
+        inv_dict = {v: k for k, v in self.vocab_dict.items()}
+
+        while len(tokens) > 1:
+            pairs = [(tokens[i], tokens[i+1]) for i in range(len(tokens)-1)]
+            if not pairs:
+                break
+            
+            pair_to_merge = min(
+                pairs, 
+                key=lambda pair: merge_idx.get(
+                    (pair[0], pair[1]), 
+                    float("inf")
+                )
+            )
+
+            if pair_to_merge not in merge_idx:
+                break
+            
+            merged_token_id = inv_dict[pair_to_merge[0] + pair_to_merge[1]] 
+            tokens = BPE._merge(tokens, pair_to_merge, merged_token_id)
+        
+        return tokens
+    
+
+    def decode(self,input_ids:List[int])->str:
+            str ="".join([self.vocab_dict[i] for i in input_ids])
+            return string
+
+
 
 if __name__ == "__main__":
-    
-    splits = 50
-    vocab_size = 1000     
-    SPECIAL_TOKENS = ["<|endoftext|>"]
-    file_path = "data/TinyStoriesV2-GPT4-valid.txt"
 
-    bpe= BPE()
-    
-    with open(file_path, "rb") as f:
-        boundaries = find_chunk_boundaries(f, splits, "<|endoftext|>".encode("utf-8"))
-        for start, end in zip(boundaries[:-1], boundaries[1:]):
-            print(start, end)
-            f.seek(start)
-            chunk = f.read(end - start).decode("utf-8", errors="ignore")
-            # Remove special tokens from the text
-            pattern = re.compile("|".join(re.escape(tok) for tok in SPECIAL_TOKENS))
-            chunk = pattern.sub("", chunk)
-            pretokenized=pre_tokenize(chunk)
-            
-            +   vocab, merges = bpe_trainer(pretokenized, vocal_size, special_tokens= SPECIAL_TOKENS)
-            print(vocab)
-            print(merges)
-            break
+
+    bp =BPEChar(vocab_size=250)
+    bp.train()
+    input_ids = bp.encode("Hello, world!")
+    decoded_text = bp.decode(input_ids)
+    print("Decoded text:", decoded_text)
