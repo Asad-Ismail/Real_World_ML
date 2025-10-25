@@ -7,6 +7,7 @@ from pydantic import BaseModel
 import matplotlib.pyplot as plt
 from dotenv import load_dotenv
 from langgraph.types import Command, interrupt
+from langgraph.errors import GraphInterrupt
 import os
 
 load_dotenv()
@@ -129,34 +130,58 @@ app = workflow.compile(checkpointer=memory)
 
 
 
-config = {"configurable": {"thread_id": "2"}}
-for event in app.stream(
-    {
-        "messages": [
-            (
-                "user",
-                "Ask the user where they are, then look up the weather there",
-            )
-        ]
-    },
-    config,
-    stream_mode="values",
-):
-    if "messages" in event:
-        event["messages"][-1].pretty_print()
+if __name__ == "__main__":
 
+    config = {"configurable": {"thread_id": "2"}}
 
+    if stream_mode := os.getenv("STREAM_MODE", "false").lower() == "true":
+        print("Streaming mode enabled")
+        for event in app.stream(
+            {
+                "messages": [
+                    (
+                        "user",
+                        "Ask the user where they are, then look up the weather there",
+                    )
+                ]
+            },
+            config,
+            stream_mode="values",
+        ):
+            if "messages" in event:
+                event["messages"][-1].pretty_print()
 
+        for event in app.stream(
+            # highlight-next-line
+            Command(resume="san francisco"),
+            config,
+            stream_mode="values",
+        ):
+            if "messages" in event:
+                event["messages"][-1].pretty_print()
 
-print(app.get_state(config).next)
+    else:
+        result = app.invoke(
+            {
+                "messages": [
+                    (
+                        "user",
+                        "Ask the user where they are, then look up the weather there",
+                    )
+                ]
+            },
+            config,
+            #stream_mode="values",
+        )
 
-
-
-for event in app.stream(
-    # highlight-next-line
-    Command(resume="san francisco"),
-    config,
-    stream_mode="values",
-):
-    if "messages" in event:
-        event["messages"][-1].pretty_print()
+        if "__interrupt__" in result:
+            graph_interrupt = result["__interrupt__"][0]
+            question = graph_interrupt.value
+            human_input = input(f"{question}\n> ")
+            result = app.invoke(Command(resume=human_input), config)
+            print(f"Final result is")
+            print( result["messages"][-1].pretty_print())
+        else:
+            print(result)
+            print("Final output:")
+            result["messages"][-1].pretty_print()
