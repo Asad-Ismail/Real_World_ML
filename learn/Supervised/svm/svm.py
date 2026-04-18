@@ -1,8 +1,15 @@
-import numpy as np
+from pathlib import Path
+import sys
+
 import matplotlib.pyplot as plt
-import os,sys
-sys.path.append("../utils")
-from utils import plot_decision_boundary
+import numpy as np
+
+CURRENT_DIR = Path(__file__).resolve().parent
+UTILS_DIR = CURRENT_DIR.parent / "utils"
+if str(UTILS_DIR) not in sys.path:
+    sys.path.insert(0, str(UTILS_DIR))
+
+from utils import ensure_directory, plot_decision_boundary
 
 def get_data():
     from sklearn.datasets import make_blobs
@@ -15,20 +22,20 @@ def hinge_loss(y_true, y_pred):
     return np.maximum(0, 1 - y_true * y_pred)
 
 class SVM:
-    def __init__(self, learning_rate=0.001, lambda_param=1, num_iterations=100000):
+    def __init__(self, learning_rate=0.001, lambda_param=1, num_iterations=1000):
         self.learning_rate = learning_rate
         self.lambda_param = lambda_param
         self.num_iterations = num_iterations
         self.w = None
         self.b = None
     
-    def fit(self, X, y,num_epochs=100):
+    def fit(self, X, y):
         n_samples, n_features = X.shape
         # Initialize parameters
         self.w = np.zeros(n_features)
         self.b = 0
         # Training loop
-        for epoch in range(num_epochs):
+        for _ in range(self.num_iterations):
             for i in range(n_samples):
                 # Compute the prediction and loss
                 y_pred = np.dot(X[i], self.w) + self.b
@@ -50,6 +57,7 @@ class SVM:
 
                 self.w -= self.learning_rate * dw
                 self.b -= self.learning_rate * db
+        return self
     
     def predict(self, X):
         y_pred = np.dot(X, self.w) + self.b
@@ -62,13 +70,16 @@ if __name__=="__main__":
     X,Y=get_data()
     Y=np.where(Y==0,-1,1)
     print(f"Y min and max are {Y.min()},{Y.max()}")
+    results_dir = ensure_directory(CURRENT_DIR / "results")
+
     plt.scatter(X[:, 0], X[:, 1], c=Y)
-    plt.savefig('results/data.png')
+    plt.savefig(results_dir / "data.png")
+    plt.close()
+
     svm=SVM()
     svm.fit(X, Y)
-    plot_decision_boundary(svm, X, Y)
+    plot_decision_boundary(svm, X, Y, save_path=results_dir / "svm.png")
     y_pred = svm.predict(X)
     accuracy = np.sum(y_pred == Y) / len(Y)
     print(f"Accuracy: {accuracy}")
-
 

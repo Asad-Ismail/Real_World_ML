@@ -1,30 +1,37 @@
-In the REINFORCE algorithm, we roll out the complete episodes because it is a Monte Carlo-based method, and the return (G_t) for each time step is required to compute the policy gradient. The return at time step t is calculated as the cumulative discounted reward from that time step until the end of the episode. Therefore, we need to wait until the episode ends to compute the returns and use them to update the policy.
+# Policy Gradient Notes
 
-REINFORCE is an on-policy method. This means that it uses the same policy to both generate behavior and evaluate or improve it. On-policy methods like REINFORCE directly estimate the value of a policy that they are currently following, as opposed to off-policy methods, which can learn about the optimal policy independently of the policy being followed.
+This folder starts with REINFORCE, the simplest policy-gradient method in the repository.
 
-In contrast, Q-learning is a temporal-difference (TD) learning method that bootstraps the value estimates using the current Q-values. It doesn't require waiting until the end of the episode to update the estimates. Instead, it uses the immediate reward and the estimated value of the next state to make the updates.
+## Why REINFORCE Waits Until The End
 
-Although REINFORCE and Q-learning both aim to solve reinforcement learning problems, their methods for learning are fundamentally different. REINFORCE is a policy-based method that directly optimizes the policy using the gradient of the expected return. In contrast, Q-learning is a value-based method that learns the action-value function Q(s, a) and indirectly derives the policy from the learned Q-values.
+REINFORCE is a Monte Carlo method. It needs the full return:
 
-It is possible to use other algorithms like Actor-Critic, which combine elements of policy-based and value-based methods, to perform updates as actions are taken, similar to Q-learning. Actor-Critic methods use a critic to estimate the value function (e.g., Q(s, a) or V(s)), which allows them to perform updates at each time step, reducing the variance of the policy gradient estimates and enabling faster learning.
+`G_t = r_t + gamma * r_(t+1) + gamma^2 * r_(t+2) + ...`
 
-Reinforce:
-    The gradient of the log probability of the policy with respect to θ is:
+That means the update for a time step is only available after the episode finishes.
 
-    ∇_θ log π(a | s, θ)
+## Core Update
 
-    Now, let's calculate the gradient for each element θ_ij in the θ matrix:
+The policy parameters `theta` are updated in the direction:
 
-    ∂(log π(a | s, θ)) / ∂θ_ij = ( ∂π(a | s, θ) / ∂θ_ij ) / π(a | s, θ)
+`theta <- theta + alpha * G_t * grad(log pi(a_t | s_t, theta))`
 
-    Using the softmax derivative property, we have:
+In this repository's Gridworld example, the policy is represented with a softmax over actions for each state.
 
-    ∂π(a | s, θ) / ∂θ_ij = π(a | s, θ) * (s_j * (δ_ai - π(i | s, θ)))
+## REINFORCE vs Q-Learning
 
-    where δ_ai is the Kronecker delta, which equals 1 when a = i and 0 otherwise.
+- REINFORCE directly updates a policy.
+- Q-learning learns action values and then acts greedily with respect to them.
+- REINFORCE is on-policy and high variance.
+- Q-learning is off-policy and bootstraps from the current value estimate.
 
-    Putting it all together, we get the gradient expression:
+## Verified Starter Commands
 
-    ∇_θ log π(a | s, θ) = (s * (δ_a - π(a | s, θ)))^T
+- `python learn/Reinforcement_Learning/policygrad/reinforce.py`
+- `python learn/Reinforcement_Learning/policygrad/actorcritic/a2c.py`
 
-    where s is the state, π(a | s, θ) is the policy probability vector, and δ_a is a one-hot vector with a 1 at the position corresponding to the action a and 0 elsewhere.
+## What To Watch For
+
+- Reward variance across episodes
+- The difference between sampling actions and choosing greedy actions
+- Why actor-critic methods can learn faster than pure REINFORCE

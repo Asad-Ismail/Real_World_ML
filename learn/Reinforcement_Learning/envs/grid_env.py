@@ -1,10 +1,13 @@
 import numpy as np
 
 class Gridworld:
-    def __init__(self, size=4, start=(0, 0), goal=(3, 3)):
+    def __init__(self, size=4, start=(0, 0), goal=(3, 3), step_reward=-1, goal_reward=0):
         self.size = size
         self.start = start
         self.goal = goal
+        self.step_reward = step_reward
+        self.goal_reward = goal_reward
+        self.action_space = 4
         self.state = start
 
     def step(self, action):
@@ -21,9 +24,9 @@ class Gridworld:
 
         self.state = (x, y)
 
-        reward = -1
+        reward = self.step_reward
         if self.state == self.goal:
-            reward = 0
+            reward = self.goal_reward
 
         return self.state, reward
 

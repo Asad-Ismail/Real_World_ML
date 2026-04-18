@@ -18,6 +18,12 @@ This repository provides comprehensive machine learning implementations built fr
 
 **Comprehensive Coverage**: From classical ML to cutting-edge deep learning, covering supervised/unsupervised learning, NLP, computer vision, and reinforcement learning.
 
+## Start Here
+
+If you are studying ML from first principles, do not start by jumping between random folders. Use the [First Principles Study Guide](./FIRST_PRINCIPLES_STUDY_GUIDE.md) for a verified learning order, concrete commands, and notes on which parts of the repository are the best starting points.
+
+After you finish the core `learn/` path, use the [Use Cases Guide](./Use_Cases/README.md) to move into the cleaned-up applied examples in a sensible order.
+
 ## Quick Start
 
 ```bash
@@ -31,6 +37,8 @@ pip install -r requirements.txt
 # Try a quick example
 python learn/Supervised/LogisticRegression/logisticregression.py
 ```
+
+The foundational supervised examples now save their figures inside each algorithm folder under `results/`.
 
 ## Repository Structure
 
@@ -74,6 +82,8 @@ python learn/Supervised/LogisticRegression/logisticregression.py
 
 ### [`/Use_Cases/`](./Use_Cases/) - Production Examples
 
+Use the [Use Cases Guide](./Use_Cases/README.md) to see which examples run locally, which ones need Spark/Kafka, and which ones require external API keys.
+
 **[Real-Time Data Processing](./Use_Cases/RealTimeDataProcessing/)**
 - Complete Kafka + Spark streaming pipeline
 - ML model inference on streaming data
@@ -100,13 +110,15 @@ python learn/Supervised/LogisticRegression/logisticregression.py
 2. [Decision Trees](./learn/Supervised/DecisionTree/) → [Random Forest](./learn/Supervised/ensemble/)
 3. [K-Means](./learn/Unsupervised/kmeans/) → [PCA](./learn/Unsupervised/pca/)
 
+For a more guided beginner sequence, including what to read in the code and what to ignore at first, use the [First Principles Study Guide](./FIRST_PRINCIPLES_STUDY_GUIDE.md).
+
 ### Intermediate Path: Deep Learning & NLP
 1. [CNNs](./learn/CNNs/) → [Generative Models](./learn/Generative_Models/)
 2. [Word2Vec](./learn/NLP/word2vec/) → [BERT](./learn/NLP/BERT/)
 3. [LLM Components](./learn/LLM_from_scratch/) → [Transformer Architecture](./learn/LLM_from_scratch/)
 
 ### Advanced Path: Production & Specialized Topics
-1. [Real-Time Processing](./Use_Cases/RealTimeDataProcessing/) → [AWS SageMaker Pipeline](./Use_Cases/Sagmeaker_Fraud_Detection_End_To_End/)
+1. [Learning With Less Data](./Use_Cases/learning_with_less/) → [Spark Image Processing](./Use_Cases/SparkImageProcessing/) → [Real-Time Processing](./Use_Cases/RealTimeDataProcessing/)
 2. [Graph Neural Networks](./learn/GNN/) → [Active Learning](./learn/active_learning/)
 3. [Reinforcement Learning](./learn/Reinforcement_Learning/) → [Explainable AI](./learn/explainable_interpretable_AI/)
 

@@ -1,34 +1,41 @@
-from pydantic import BaseModel
-from openai import OpenAI
-import json
 import os
-from dotenv import load_dotenv
+
 import instructor
+from dotenv import load_dotenv
+from openai import OpenAI
+from pydantic import BaseModel
 
-load_dotenv()
 
-token = os.getenv("MGA_API_KEY")
-client = OpenAI(base_url="https://chat.int.bayer.com/api/v2", api_key=token)
-model = 'o4-mini'
+MODEL_NAME = "o4-mini"
 
-# 1. Define your model
+
 class UserDetails(BaseModel):
     name: str
     age: int
 
 
-client = instructor.patch(client)
+def build_client() -> OpenAI:
+    load_dotenv()
+    token = os.getenv("MGA_API_KEY")
+    if not token:
+        raise EnvironmentError("Set MGA_API_KEY before running this example.")
+    client = OpenAI(base_url="https://chat.int.bayer.com/api/v2", api_key=token)
+    return instructor.patch(client)
 
-# 3. Call the client and specify your 'response_model'
-user_details = client.chat.completions.create(
-    model=model,
-    #response_model=UserDetails,  
-    messages=[{"role": "user", "content": "Extract: Jason is 25 years old."}]
-)
 
-print(user_details)
+def extract_user_details(text: str) -> UserDetails:
+    client = build_client()
+    return client.chat.completions.create(
+        model=MODEL_NAME,
+        response_model=UserDetails,
+        messages=[{"role": "user", "content": f"Extract the structured user information from: {text}"}],
+    )
 
-assert isinstance(user_details, UserDetails)
 
-print(user_details)
+def main() -> None:
+    user_details = extract_user_details("Jason is 25 years old.")
+    print(user_details.model_dump_json(indent=2))
 
+
+if __name__ == "__main__":
+    main()

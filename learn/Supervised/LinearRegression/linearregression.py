@@ -1,5 +1,9 @@
+from pathlib import Path
+
 import numpy as np
 import matplotlib.pyplot as plt
+
+CURRENT_DIR = Path(__file__).resolve().parent
 
 class LinearRegression:
     
@@ -29,6 +33,9 @@ class LinearRegression:
         return y_pred
 
 if __name__=="__main__":
+    results_dir = CURRENT_DIR / "results"
+    results_dir.mkdir(parents=True, exist_ok=True)
+
     # Create a toy dataset with 2d feature vector
     X = np.array([1, 3, 5, 7, 9, 10])
     X=X.reshape(-1,1)
@@ -40,7 +47,8 @@ if __name__=="__main__":
     y=y+noise
     plt.figure()
     plt.scatter(X,y,color='g')
-    plt.savefig('results/data.png')
+    plt.savefig(results_dir / "data.png")
+    plt.close()
 
     # Create a LinearRegression object and fit the model to the data
     lr = LinearRegression()
@@ -58,5 +66,7 @@ if __name__=="__main__":
     residuals = np.mean(np.sqrt((y - y_pred)**2))
     # Print the residuals
     print("Mean Residuals: ", residuals)
+    plt.figure()
     plt.scatter(X,y_pred,color='r')
-    plt.savefig('results/linear_regression.png')
+    plt.savefig(results_dir / "linear_regression.png")
+    plt.close()

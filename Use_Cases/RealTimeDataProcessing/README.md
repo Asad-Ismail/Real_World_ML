@@ -1,27 +1,80 @@
-## Real Time dat processing
+# Real-Time Fraud Detection With Kafka + Spark
 
+This folder shows a minimal end-to-end streaming workflow:
 
-## KAFKA for real time messagge transport and Queue
+1. download and split a tabular fraud dataset
+2. train a Spark model on the historical data
+3. stream validation rows into Kafka
+4. score those rows with Spark Structured Streaming
 
-See these instructions to instlal KAFKA and run kafka service
+## What You Need
 
-https://kafka.apache.org/quickstart
+- Python dependencies from `requirements.txt`
+- Apache Spark installed locally
+- Kafka running locally on `localhost:9092`
 
-## Test KAFKA publishing and subscriber
+If you want to run Spark locally, `local[*]` is a good default master value.
 
-bin/kafka-console-producer.sh --topic [Your_Topic_Name] --bootstrap-server localhost:9092
+## Install
 
-bin/kafka-console-consumer.sh --topic [Your_Topic_Name] --from-beginning --bootstrap-server localhost:9092
+```bash
+pip install -r Use_Cases/RealTimeDataProcessing/requirements.txt
+```
 
+## 1. Download And Split The Dataset
 
-## Train Model
+```bash
+python Use_Cases/RealTimeDataProcessing/get_data.py
+```
 
-Use spark_training.py to train the model
+This creates:
 
+- `Use_Cases/RealTimeDataProcessing/creditcardfraud/X_train.csv`
+- `Use_Cases/RealTimeDataProcessing/creditcardfraud/X_val.csv`
+- `Use_Cases/RealTimeDataProcessing/creditcardfraud/y_train.csv`
+- `Use_Cases/RealTimeDataProcessing/creditcardfraud/y_val.csv`
 
-## Ingerence 
+## 2. Train The Spark Model
 
-Use spark_inference.py to use trained model to infer on the streaming data coming from kafka message
+```bash
+python Use_Cases/RealTimeDataProcessing/spark_training.py --master "local[*]"
+```
 
+This writes the trained Spark pipeline to:
 
+- `Use_Cases/RealTimeDataProcessing/trained_model/`
 
+## 3. Start Streaming Inference
+
+Start Kafka first, then run:
+
+```bash
+python Use_Cases/RealTimeDataProcessing/spark_inference.py --master "local[*]"
+```
+
+The inference job reads JSON messages from the Kafka topic `fraud-message` and prints predictions to the console.
+
+## 4. Publish Validation Rows Into Kafka
+
+In a second terminal:
+
+```bash
+python Use_Cases/RealTimeDataProcessing/kafka_producer.py --delay-seconds 0.5 --max-messages 20
+```
+
+Use `--max-messages` for a quick smoke test. Omit it to stream the full validation CSV.
+
+## Kafka Sanity Check
+
+If you want to verify Kafka itself before running Spark, you can still use the CLI tools:
+
+```bash
+bin/kafka-console-producer.sh --topic fraud-message --bootstrap-server localhost:9092
+bin/kafka-console-consumer.sh --topic fraud-message --from-beginning --bootstrap-server localhost:9092
+```
+
+## Notes
+
+- All scripts are now safe to import without immediately starting training or streaming.
+- The dataset download requires internet access.
+- Spark Structured Streaming with Kafka requires the Kafka Spark package configured in `spark_inference.py`.

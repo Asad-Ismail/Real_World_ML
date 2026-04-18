@@ -1,8 +1,15 @@
-import numpy as np
+from pathlib import Path
+import sys
+
 import matplotlib.pyplot as plt
-import os,sys
-sys.path.append("../utils")
-from utils import plot_decision_boundary
+import numpy as np
+
+CURRENT_DIR = Path(__file__).resolve().parent
+UTILS_DIR = CURRENT_DIR.parent / "utils"
+if str(UTILS_DIR) not in sys.path:
+    sys.path.insert(0, str(UTILS_DIR))
+
+from utils import ensure_directory, plot_decision_boundary
 
 def get_data():
     from sklearn.datasets import make_blobs
@@ -11,46 +18,53 @@ def get_data():
     return X,Y
 
 class LogisticRegression:
-    def __init__(self, learning_rate=0.001, num_iterations=1000):
+    def __init__(self, learning_rate=0.01, num_iterations=2000):
         self.learning_rate = learning_rate
         self.num_iterations = num_iterations
     
     def sigmoid(self, z):
+        z = np.clip(z, -500, 500)
         return 1 / (1 + np.exp(-z))
     
     def fit(self, X, y):
         m, n = X.shape
-        self.weights = np.zeros((n, 1))
+        y = np.asarray(y, dtype=float).reshape(m)
+        self.weights = np.zeros(n, dtype=float)
         self.bias = 0
         
-        for i in range(self.num_iterations):
+        for _ in range(self.num_iterations):
             # forward propagation
             z = np.dot(X, self.weights) + self.bias
             a = self.sigmoid(z)
             
             # backward propagation
-            dz = a - y.reshape(m, 1)
+            dz = a - y
             dw = np.dot(X.T, dz) / m
             db = np.sum(dz) / m
-            #print(dw)
+
             # update parameters
             self.weights -= self.learning_rate * dw
             self.bias -= self.learning_rate * db
+        return self
         
     def predict(self, X):
         z = np.dot(X, self.weights) + self.bias
         a = self.sigmoid(z)
-        return np.int0(np.round(a)).squeeze(1)
+        return np.rint(a).astype(int)
 
 
 if __name__=="__main__":
     X,Y=get_data()
     print(f"Y min and max are {Y.min()},{Y.max()}")
+    results_dir = ensure_directory(CURRENT_DIR / "results")
+
     plt.scatter(X[:, 0], X[:, 1], c=Y)
-    plt.savefig('results/data.png')
+    plt.savefig(results_dir / "data.png")
+    plt.close()
+
     model=LogisticRegression()
     model.fit(X, Y)
-    plot_decision_boundary(model, X, Y,save_path="results/logistic_regression.png")
+    plot_decision_boundary(model, X, Y, save_path=results_dir / "logistic_regression.png")
     y_pred = model.predict(X)
     accuracy = (np.sum(y_pred == Y)) / len(Y)
     print(f"Accuracy: {accuracy}")

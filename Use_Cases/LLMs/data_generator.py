@@ -1,18 +1,31 @@
 import dspy
+import argparse
 import os
 from dotenv import load_dotenv
 import json
 import time
 import yaml
+from pathlib import Path
 
 
 # Load environment variables from .env file
 load_dotenv()
 
-# Configure the LLM
-# Make sure your LM is configured correctly
-lm = dspy.LM("openrouter/moonshotai/kimi-k2:free", api_key=os.getenv("OPENROUTER_API_KEY"), api_base="https://openrouter.ai/api/v1")
-dspy.configure(lm=lm)
+SCRIPT_DIR = Path(__file__).resolve().parent
+DEFAULT_TOPIC_FILE = SCRIPT_DIR / "dl_research.yaml"
+DEFAULT_OUTPUT_DIR = SCRIPT_DIR / "historical_ai_landmarks"
+
+
+def configure_lm() -> None:
+    api_key = os.getenv("OPENROUTER_API_KEY")
+    if not api_key:
+        raise EnvironmentError("Set OPENROUTER_API_KEY before running this example.")
+    lm = dspy.LM(
+        "openrouter/moonshotai/kimi-k2:free",
+        api_key=api_key,
+        api_base="https://openrouter.ai/api/v1",
+    )
+    dspy.configure(lm=lm)
 
 class DescribeLandmarkSolution(dspy.Signature):
     """
@@ -96,48 +109,53 @@ class DescribeLandmarkSolution(dspy.Signature):
     context: str = dspy.OutputField()
     landmark_solution: dict = dspy.OutputField(desc="A dictionary containing the detailed breakdown of the solution.")
 
+def generate_dataset(topic_file: Path, output_dir: Path, start_index: int = 0) -> None:
+    predictor = dspy.Predict(DescribeLandmarkSolution)
+    with open(topic_file, encoding="utf-8") as file:
+        data = yaml.safe_load(file)
 
-generate_datapoint = dspy.Predict(DescribeLandmarkSolution)
+    landmark_solutions_to_document = data["landmark_solutions_to_document"]
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-with open("/home/asad/dev/Real_World_ML/Use_Cases/LLMs/dl_research.yaml") as f:
-    data = yaml.safe_load(f)
+    for index, solution_name in enumerate(landmark_solutions_to_document, start=start_index):
+        print(f"[{index + 1}/{len(landmark_solutions_to_document)}] Documenting: '{solution_name}'...")
+        try:
+            start_time = time.monotonic()
+            result = predictor(solution_name=solution_name)
+            output_data = {
+                "solution_name": solution_name,
+                "simplified_problem": result.simplified_problem_statement,
+                "problem_it_solved": result.problem_statement,
+                "historical_context": result.context,
+                "landmark_solution_details": result.landmark_solution,
+            }
+            end_time = time.monotonic()
+            print(f"Time to process one query {end_time - start_time:.2f}s")
 
-landmark_solutions_to_document = data["landmark_solutions_to_document"]
+            file_name = f"solution_{index + 1}_{solution_name.split('(')[0].strip().replace(' ', '_').lower()}.json"
+            file_path = output_dir / file_name
+            with open(file_path, "w", encoding="utf-8") as file:
+                json.dump(output_data, file, indent=4)
+            print(f"  -> Saved to {file_path}")
+        except Exception as error:
+            print(f"  -> Error while processing '{solution_name}': {error}")
 
-# Create a directory to save the outputs
-output_dir = "historical_ai_landmarks"
-os.makedirs(output_dir, exist_ok=True)
+    print("\nDataset generation complete.")
 
-for i, solution_name in enumerate(landmark_solutions_to_document,start=71):
-    print(f"[{i+1}/{len(landmark_solutions_to_document)}] Documenting: '{solution_name}'...")
-    try:
-        start_time = time.monotonic()
-        # Run the generation
-        result = generate_datapoint(solution_name=solution_name)
 
-        # Structure and save the data
-        output_data = {
-            "solution_name": solution_name,
-            "simplified_problem": result.simplified_problem_statement, 
-            "problem_it_solved": result.problem_statement,
-            "historical_context": result.context,
-            "landmark_solution_details": result.landmark_solution
-        }
-        end_time = time.monotonic()
-        print(f"Time to process one query {end_time-start_time}s")
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Generate landmark AI research summaries with DSPy.")
+    parser.add_argument("--topic-file", type=Path, default=DEFAULT_TOPIC_FILE)
+    parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
+    parser.add_argument("--start-index", type=int, default=0)
+    return parser.parse_args()
 
-        print(output_data)
-        #break
-        file_name = f"solution_{i+1}_{solution_name.split('(')[0].strip().replace(' ', '_').lower()}.json"
-        file_path = os.path.join(output_dir, file_name)
-        
-        with open(file_path, 'w', encoding='utf-8') as f:
-            # The landmark_solution is already a dict, so we can dump directly
-            json.dump(output_data, f, indent=4)
-            
-        print(f"  -> Successfully documented and saved to {file_path}")
 
-    except Exception as e:
-        print(f"  -> An error occurred while processing '{solution_name}': {e}")
+def main() -> None:
+    args = parse_args()
+    configure_lm()
+    generate_dataset(args.topic_file, args.output_dir, start_index=args.start_index)
 
-print("\nDataset generation complete.")
+
+if __name__ == "__main__":
+    main()

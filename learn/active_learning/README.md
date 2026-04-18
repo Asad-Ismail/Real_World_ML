@@ -22,3 +22,11 @@ This method utilizes Monte Carlo (MC) dropout to estimate model uncertainty duri
 ## 2. Entropy-based Selection for Image Segmentation
 
 This strategy calculates the entropy of the model's predictions to gauge uncertainty. Higher entropy values indicate greater uncertainty, making those samples prime candidates for labeling. This approach leverages the softmax outputs of a segmentation model to compute entropy directly.
+
+## Verified Starter Commands
+
+- `python learn/active_learning/OD_basic_active_learning.py`
+- `python learn/active_learning/segm_active_learning_montecarlo.py`
+- `python learn/active_learning/segm_entropy_active_learning.py`
+
+The examples in this folder are lightweight educational demos. They illustrate uncertainty scoring logic without requiring a full training pipeline or large datasets.

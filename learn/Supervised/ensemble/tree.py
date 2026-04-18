@@ -2,9 +2,11 @@
 import random
 
 import numpy as np
-from scipy import stats
 
-from base import split, split_dataset, xgb_criterion
+try:
+    from .base import split, split_dataset, xgb_criterion
+except ImportError:
+    from base import split, split_dataset, xgb_criterion
 
 random.seed(111)
 

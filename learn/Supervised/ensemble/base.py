@@ -1,16 +1,14 @@
 # coding:utf-8
 import numpy as np
-from scipy import stats
 
 
 def f_entropy(p):
     # Convert values to probability
     p = np.bincount(p) / float(p.shape[0])
-
-    ep = stats.entropy(p)
-    if ep == -float("inf"):
+    p = p[p > 0]
+    if p.size == 0:
         return 0.0
-    return ep
+    return -np.sum(p * np.log(p))
 
 
 def information_gain(y, splits):

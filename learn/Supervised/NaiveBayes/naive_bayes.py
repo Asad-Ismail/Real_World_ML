@@ -1,8 +1,15 @@
-import numpy as np
+from pathlib import Path
+import sys
+
 import matplotlib.pyplot as plt
-import os,sys
-sys.path.append("../utils")
-from utils import plot_decision_boundary
+import numpy as np
+
+CURRENT_DIR = Path(__file__).resolve().parent
+UTILS_DIR = CURRENT_DIR.parent / "utils"
+if str(UTILS_DIR) not in sys.path:
+    sys.path.insert(0, str(UTILS_DIR))
+
+from utils import ensure_directory, plot_decision_boundary
 
 
 def get_data():
@@ -13,89 +20,62 @@ def get_data():
 
 class NaiveBayes:
     
-    def __init__(self):
-        pass
+    def __init__(self, var_smoothing=1e-9):
+        self.var_smoothing = var_smoothing
 
-    @staticmethod
-    def mean_var(X, y):
-        """
-        Calculate the mean and variance of each feature for each class.
-        
-        Arguments:
-        X -- a numpy array of shape (n_samples, n_features) containing the features
-        y -- a numpy array of shape (n_samples,) containing the class labels
-        
-        Returns:
-        a tuple (mean, var) containing two numpy arrays of shape (n_classes, n_features) 
-        containing the mean and variance of each feature for each class
-        """
-        n_samples, n_features = X.shape
-        n_classes = len(np.unique(y))
-        mean = np.zeros((n_classes, n_features))
-        var = np.zeros((n_classes, n_features))
-        for i in range(n_classes):
-            X_i = X[y == i]
-            mean[i, :] = np.mean(X_i, axis=0)
-            var[i, :] = np.var(X_i, axis=0)
-        return mean, var
+    def fit(self, X, y):
+        X = np.asarray(X, dtype=float)
+        y = np.asarray(y)
 
-    
-    def prior_prob(self,y):
-        """
-        Calculate the prior probability of each class.
-        
-        Arguments:
-        y -- a numpy array of shape (n_samples,) containing the class labels
-        
-        Returns:
-        a numpy array of shape (n_classes,) containing the prior probability of each class
-        """
-        n_samples = y.shape[0]
-        n_classes = len(np.unique(y))
-        prior = np.zeros(n_classes)
-        for i in range(n_classes):
-            prior[i] = np.sum(y == i) / n_samples
-        return prior
-    
-    def fit(self,X,y):
-        self.prior=self.prior_prob(y)
-        self.mean,self.var=self.mean_var(X,y)
+        self.classes_ = np.unique(y)
+        n_classes = len(self.classes_)
+        n_features = X.shape[1]
 
-    def predict(self,X):
-        """
-        Predict the class label of a new sample using the Naive Bayes algorithm.
-        
-        Arguments:
-        X -- a numpy array of shape (n_samples, n_features) containing the features of the new sample
-        prior -- a numpy array of shape (n_classes,) containing the prior probability of each class
-        mean -- a numpy array of shape (n_classes, n_features) containing the mean of each feature for each class
-        var -- a numpy array of shape (n_classes, n_features) containing the variance of each feature for each class
-        
-        Returns:
-        a numpy array of shape (n_samples,) containing the predicted class label of each sample
-        """
-        n_samples, n_features = X.shape
-        n_classes = len(self.prior)
-        likelihood = np.zeros((n_samples, n_classes))
-        for i in range(n_classes):
-            # calculate the class conditional probability using Gaussian distribution
-            likelihood[:, i] = np.prod(1 / np.sqrt(2 * np.pi * self.var[i, :]) * np.exp(-(X - self.mean[i, :])**2 / (2 * self.var[i, :])), axis=1)
-        # calculate the posterior probability and predict the class with the highest probability
-        posterior = likelihood * self.prior
-        preds = np.argmax(posterior,axis=1)
-        return preds
+        self.prior = np.zeros(n_classes, dtype=float)
+        self.mean = np.zeros((n_classes, n_features), dtype=float)
+        self.var = np.zeros((n_classes, n_features), dtype=float)
+
+        for class_index, class_label in enumerate(self.classes_):
+            X_class = X[y == class_label]
+            self.prior[class_index] = X_class.shape[0] / X.shape[0]
+            self.mean[class_index] = np.mean(X_class, axis=0)
+            self.var[class_index] = np.var(X_class, axis=0) + self.var_smoothing
+        return self
+
+    def _joint_log_likelihood(self, X):
+        X = np.asarray(X, dtype=float)
+        joint_log_likelihood = []
+
+        for class_index, _ in enumerate(self.classes_):
+            log_prior = np.log(self.prior[class_index])
+            log_likelihood = -0.5 * np.sum(
+                np.log(2.0 * np.pi * self.var[class_index])
+                + ((X - self.mean[class_index]) ** 2) / self.var[class_index],
+                axis=1,
+            )
+            joint_log_likelihood.append(log_prior + log_likelihood)
+
+        return np.column_stack(joint_log_likelihood)
+
+    def predict(self, X):
+        posterior = self._joint_log_likelihood(X)
+        class_indices = np.argmax(posterior, axis=1)
+        return self.classes_[class_indices]
 
 
 
 if __name__=="__main__":
     X,Y=get_data()
-    #Y=np.where(Y==0,-1,1)
     print(f"Y min and max are {Y.min()},{Y.max()}")
+    results_dir = ensure_directory(CURRENT_DIR / "results")
+
     plt.scatter(X[:, 0], X[:, 1], c=Y)
-    plt.savefig('results/data.png')
+    plt.savefig(results_dir / "data.png")
+    plt.close()
+
     nb=NaiveBayes()
     nb.fit(X, Y)
-    plot_decision_boundary(nb, X, Y,save_path="results/naivebayes.png")
+    plot_decision_boundary(nb, X, Y, save_path=results_dir / "naivebayes.png")
     y_pred = nb.predict(X)
     accuracy = np.sum(y_pred == Y) / len(Y)
     print(f"Accuracy: {accuracy}")

@@ -12,7 +12,7 @@
 # - Incorporates prior information about the parameters using a prior distribution P(θ).
 # - Balances information from observed data and prior beliefs.
 
-'''
+r'''
 ### Coin Flipping Experiment:
 
 Imagine you have a coin, and you're not sure if it's fair. You flip it a few times to determine the probability \( \theta \) of it landing heads.
@@ -123,4 +123,3 @@ train_map(model_map, x_tensor, y_tensor)
 # Checking parameters after training
 print("Weights after MLE training:", model_mle.fc.weight.item())
 print("Weights after MAP training:", model_map.fc.weight.item())
-

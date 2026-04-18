@@ -1,93 +1,106 @@
-import numpy as np
+from pathlib import Path
+
 import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.datasets import load_digits
+from sklearn.model_selection import train_test_split
 
-# only to downalod dataset
-#pip install mnist
+CURRENT_DIR = Path(__file__).resolve().parent
+RESULTS_DIR = CURRENT_DIR / "results"
 
-def get_data():
-    # only to get sample dataset
-    import mnist   
-    train_imgs=mnist.train_images()
-    test_imgs= mnist.test_images()
-    print(f"Train and test shape are {train_imgs.shape},{test_imgs.shape}")
-    return train_imgs,test_imgs
+
+def ensure_results_dir():
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    return RESULTS_DIR
+
+
+def get_data(test_size=0.2, random_state=42):
+    digits = load_digits()
+    X = digits.data.astype(float)
+    train_imgs, test_imgs = train_test_split(X, test_size=test_size, random_state=random_state, shuffle=True)
+    print(f"Train and test shape are {train_imgs.shape}, {test_imgs.shape}")
+    return train_imgs, test_imgs, digits.images.shape[1:]
+
 
 class PCA:
-    def __init__(self,components):
-        self.components=components
+    def __init__(self, components):
+        self.components = components
 
-    def standardize(self,X,eps=1e-5):
-        X = (X - self.mean) 
-        #X = (X - self.mean) / (self.std+eps)
-        return X
+    def _center(self, X):
+        return X - self.mean_
 
+    def fit(self, X):
+        X = np.asarray(X, dtype=float)
+        self.mean_ = np.mean(X, axis=0)
+        X_centered = self._center(X)
 
-    def fit(self,X):
-        # calculate mean and variance
-        self.mean=np.mean(X, axis=0)
-        self.std=np.std(X, axis=0)
-        print(f"Mean and std of data is {X.shape},{self.mean.shape}, {self.std.shape}")
-        # standardize the data
-        X = self.standardize(X)
-        # compute the covariance matrix
-        cov_matrix = np.cov(X.T)
-        
-        # compute the eigenvalues and eigenvectors of the covariance matrix
-        eigenvalues, eigenvectors = np.linalg.eig(cov_matrix)
-        print(f"Eigen values and vectors shape is {eigenvalues.shape}, {eigenvectors.shape}")
-        
-        # sort the eigenvalues and eigenvectors in descending order
+        cov_matrix = np.cov(X_centered, rowvar=False)
+        eigenvalues, eigenvectors = np.linalg.eigh(cov_matrix)
+
         sorted_indices = np.argsort(eigenvalues)[::-1]
-        sorted_eigenvalues = eigenvalues[sorted_indices]
-        sorted_eigenvectors = eigenvectors[:,sorted_indices]
-        
-        # select the top n components
-        top_n_eigenvectors = sorted_eigenvectors[:,:self.components]
-        print(f"Top N Eigen vector shape is {top_n_eigenvectors.shape}")
-        self.top_n_eigenvectors=top_n_eigenvectors
+        self.explained_variance_ = eigenvalues[sorted_indices]
+        self.components_ = eigenvectors[:, sorted_indices[: self.components]]
 
-    def pred(self,X):
-        # Standardize data
-        X=self.standardize(X)
-        # transform the data into the new coordinate system
-        transformed_data = np.dot(X, self.top_n_eigenvectors)
-        return transformed_data
+        total_variance = np.sum(self.explained_variance_)
+        self.explained_variance_ratio_ = self.explained_variance_ / total_variance
+        return self
 
+    def transform(self, X):
+        X = np.asarray(X, dtype=float)
+        return self._center(X) @ self.components_
 
-    def pca_inverse_transform(self,transformed_data):
-        """Perform PCA inverse transform on transformed data."""
-        
-        # Multiply transformed data by transpose of PCA component matrix
-        inverse_transformed_data = np.dot(transformed_data, self.top_n_eigenvectors.T)
-        
-        # Add mean vector to shift back to original scale
-        original_data = inverse_transformed_data + self.mean
-        
-        return original_data
+    def pred(self, X):
+        return self.transform(X)
+
+    def inverse_transform(self, transformed_data):
+        transformed_data = np.asarray(transformed_data, dtype=float)
+        return transformed_data @ self.components_.T + self.mean_
+
+    def pca_inverse_transform(self, transformed_data):
+        return self.inverse_transform(transformed_data)
 
 
-if __name__ =="__main__":
-    train_imgs,test_imgs=get_data()
-    plt.imshow(train_imgs[np.random.randint(0,len(train_imgs))])
-    img_dim=np.prod(np.array(train_imgs.shape[1:]))
-    #Flatten train and test images
-    train_imgs=train_imgs.reshape(-1,img_dim)
-    test_imgs=train_imgs.reshape(-1,img_dim) 
-    n_components=361
-    print(f"Number of parameters compared to original{(n_components/img_dim)*100} %")
-    model=PCA(n_components)
+if __name__ == "__main__":
+    ensure_results_dir()
+    train_imgs, test_imgs, image_shape = get_data()
+    img_dim = train_imgs.shape[1]
+    n_components = 16
+
+    print(f"Number of retained dimensions compared to original: {(n_components / img_dim) * 100:.2f}%")
+    model = PCA(n_components)
     model.fit(train_imgs)
-    transformed=model.pred(test_imgs)
-    reconstructed=model.pca_inverse_transform(transformed)
-    out_dim=int(np.sqrt(img_dim))
-    reconstructed=reconstructed.reshape(-1,out_dim,out_dim)
-    testidx=np.random.randint(0,len(test_imgs))
-    print(f"Test index is {testidx}")
-    orgimg=test_imgs[testidx,...].reshape(out_dim,out_dim)
-    recons=reconstructed[testidx,...]
-    print(f"Test Images and Prediction shape is {test_imgs.shape}, {reconstructed.shape}")
-    plt.imshow(np.concatenate((orgimg,recons),axis=1))
-    plt.savefig("results/recons.png")
 
+    transformed = model.transform(test_imgs)
+    reconstructed = model.inverse_transform(transformed)
+
+    explained_variance = float(np.sum(model.explained_variance_ratio_[:n_components]))
+    print(f"Explained variance captured by first {n_components} components: {explained_variance:.4f}")
+
+    rng = np.random.default_rng(42)
+    testidx = int(rng.integers(0, len(test_imgs)))
+    print(f"Test index is {testidx}")
+
+    orgimg = test_imgs[testidx].reshape(image_shape)
+    recons = np.clip(reconstructed[testidx], 0, 16).reshape(image_shape)
+    print(f"Test images and reconstruction shape are {test_imgs.shape}, {reconstructed.shape}")
+
+    fig, axes = plt.subplots(1, 2, figsize=(8, 4))
+    axes[0].imshow(orgimg, cmap="gray")
+    axes[0].set_title("Original")
+    axes[0].axis("off")
+    axes[1].imshow(recons, cmap="gray")
+    axes[1].set_title("Reconstruction")
+    axes[1].axis("off")
+    fig.savefig(RESULTS_DIR / "recons.png", bbox_inches="tight")
+    plt.close(fig)
+
+    fig, ax = plt.subplots()
+    cumulative_variance = np.cumsum(model.explained_variance_ratio_)
+    ax.plot(np.arange(1, len(cumulative_variance) + 1), cumulative_variance)
+    ax.set_title("Cumulative Explained Variance")
+    ax.set_xlabel("Number of components")
+    ax.set_ylabel("Explained variance ratio")
+    fig.savefig(RESULTS_DIR / "variance.png", bbox_inches="tight")
+    plt.close(fig)
 
 

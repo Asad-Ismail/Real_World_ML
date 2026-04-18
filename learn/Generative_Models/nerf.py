@@ -2,6 +2,15 @@ import torch
 import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
+from pathlib import Path
+
+CURRENT_DIR = Path(__file__).resolve().parent
+RESULTS_DIR = CURRENT_DIR / "results"
+
+
+def ensure_results_dir():
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    return RESULTS_DIR
 
 class MLP(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, num_layers):
@@ -30,30 +39,35 @@ def train_nerf(nerf_model, coords, colors, optimizer, epochs=1000):
 def generate_image(nerf_model, img_width, img_height, focal_length, eye, look_at, up):
     nerf_model.eval()
     aspect_ratio = float(img_width) / img_height
-    camera_origin = eye
-    camera_direction = (look_at - eye).unsqueeze(-1).float()
-    camera_direction /= torch.norm(camera_direction)
-    camera_right = torch.cross(camera_direction.squeeze(-1), up).unsqueeze(-1).float()
-    camera_right /= torch.norm(camera_right)
-    camera_up = torch.cross(camera_right.squeeze(-1), camera_direction.squeeze(-1)).unsqueeze(-1).float()
+    camera_direction = (look_at - eye).float()
+    camera_direction = camera_direction / torch.norm(camera_direction)
+    camera_right = torch.linalg.cross(camera_direction, up.float())
+    camera_right = camera_right / torch.norm(camera_right)
+    camera_up = torch.linalg.cross(camera_right, camera_direction)
 
     x = torch.linspace(-aspect_ratio, aspect_ratio, img_width)
     y = torch.linspace(-1.0, 1.0, img_height)
-    xv, yv = torch.meshgrid(x, y)
+    yv, xv = torch.meshgrid(y, x, indexing="ij")
 
-    coords = torch.stack([xv, yv], dim=-1).view(-1, 2)
-    coords = torch.cat([coords, torch.ones(coords.shape[0], 1) * focal_length], dim=-1)
+    coords = torch.stack(
+        [
+            xv.reshape(-1),
+            yv.reshape(-1),
+            torch.full((img_height * img_width,), focal_length),
+        ],
+        dim=1,
+    )
 
-    world_coords = (coords[..., 0:1] * camera_right + coords[..., 1:2] * camera_up + coords[..., 2:3] * camera_direction).T
-    world_coords = world_coords + camera_origin.unsqueeze(-1)
-    world_coords = world_coords.view(3, img_height, img_width)
+    camera_basis = torch.stack([camera_right, camera_up, camera_direction], dim=1)
+    world_coords = coords @ camera_basis.T + eye.float()
 
-    colors = nerf_model(world_coords.view(3, -1).T)
+    colors = nerf_model(world_coords)
     colors = colors.view(img_height, img_width, 3).detach().numpy()
 
     return np.clip(colors, 0, 1)
 
 def main():
+    ensure_results_dir()
     input_dim = 3
     hidden_dim = 256
     output_dim = 3
@@ -66,11 +80,11 @@ def main():
     coords = torch.randn(1000, 3)
     colors = torch.randn(1000, 3)
 
-    train_nerf(nerf_model, coords, colors, optimizer, epochs=1000)
+    train_nerf(nerf_model, coords, colors, optimizer, epochs=300)
 
     # Image generation parameters
-    img_width = 512
-    img_height = 512
+    img_width = 128
+    img_height = 128
     focal_length = 1.0
     eye = torch.tensor([0.0, 0.0, -2.0])
     look_at = torch.tensor([0.0, 0.0, 0.0])
@@ -79,8 +93,8 @@ def main():
     # Generate image
     generated_image = generate_image(nerf_model, img_width, img_height, focal_length, eye, look_at, up)
 
-    plt.imsave('generated_image.png', generated_image)
-    print("Generated image saved as 'generated_image.png'")
+    plt.imsave(RESULTS_DIR / "generated_image.png", generated_image)
+    print("Generated image saved as learn/Generative_Models/results/generated_image.png")
 
 if __name__ == "__main__":
     main()

@@ -1,5 +1,5 @@
 # coding:utf-8
-import autograd.numpy as np
+import numpy as np
 
 EPS = 1e-15
 
@@ -66,7 +66,7 @@ def logloss(actual, predicted):
 
 
 def hinge(actual, predicted):
-    return np.mean(np.max(1.0 - actual * predicted, 0.0))
+    return np.mean(np.maximum(1.0 - actual * predicted, 0.0))
 
 
 def binary_crossentropy(actual, predicted):

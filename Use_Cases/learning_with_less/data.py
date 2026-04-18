@@ -1,105 +1,216 @@
+import logging
+from typing import Sequence
+
+import numpy as np
 import torch
-from torch.utils.data import DataLoader
-from torchvision import transforms, models
-from datasets import load_dataset, concatenate_datasets
+from PIL import Image
+from sklearn.datasets import load_digits
+from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms
 
-def prepare_dataset(train_pct, val_pct):
+
+LOGGER = logging.getLogger(__name__)
+IMAGE_SIZE = 64
+
+
+class SupervisedImageRegressionDataset(Dataset):
+    def __init__(self, images: Sequence[Image.Image], targets: Sequence[float], transform):
+        self.images = list(images)
+        self.targets = np.asarray(targets, dtype=np.float32)
+        self.transform = transform
+
+    def __len__(self) -> int:
+        return len(self.images)
+
+    def __getitem__(self, index: int):
+        original_image = self.images[index].copy()
+        transformed_image = self.transform(original_image)
+        target = torch.tensor([self.targets[index]], dtype=torch.float32)
+        return {
+            "image": transformed_image,
+            "age": target,
+            "original_image": original_image,
+        }
+
+
+class UnsupervisedImageDataset(Dataset):
+    def __init__(self, images: Sequence[Image.Image]):
+        self.images = list(images)
+
+    def __len__(self) -> int:
+        return len(self.images)
+
+    def __getitem__(self, index: int):
+        return {"image": self.images[index].copy()}
+
+
+def _digits_to_pil_images() -> tuple[list[Image.Image], np.ndarray]:
+    dataset = load_digits()
+    images = []
+    for image in dataset.images:
+        image = (image / image.max()) * 255.0
+        pil_image = Image.fromarray(image.astype(np.uint8), mode="L").convert("RGB")
+        images.append(pil_image)
+    targets = dataset.target.astype(np.float32)
+    return images, targets
+
+
+def _load_utkface_examples() -> tuple[list[Image.Image], np.ndarray]:
+    try:
+        from datasets import concatenate_datasets, load_dataset
+    except ImportError as error:
+        raise RuntimeError(
+            "The optional 'datasets' package is required for the UTK-Face example."
+        ) from error
+
     dataset = load_dataset("deedax/UTK-Face-Revised")
-    ds_train = dataset["train"]
-    ds_val = dataset["valid"]
+    combined = concatenate_datasets([dataset["train"], dataset["valid"]]).shuffle(seed=42)
+    images = [example["image"].convert("RGB") for example in combined]
+    targets = np.asarray([float(example["age"]) for example in combined], dtype=np.float32)
+    return images, targets
 
-    ds_full = concatenate_datasets([ds_train, ds_val])
-    total_size = len(ds_full)
+
+def _load_examples(dataset_source: str) -> tuple[list[Image.Image], np.ndarray, str]:
+    if dataset_source == "digits":
+        images, targets = _digits_to_pil_images()
+        return images, targets, "digits"
+
+    if dataset_source == "utkface":
+        images, targets = _load_utkface_examples()
+        return images, targets, "utkface"
+
+    try:
+        images, targets = _load_utkface_examples()
+        LOGGER.info("Loaded UTK-Face dataset for the limited-data example.")
+        return images, targets, "utkface"
+    except Exception as error:
+        LOGGER.warning(
+            "Falling back to the built-in digits dataset because UTK-Face was unavailable: %s",
+            error,
+        )
+        images, targets = _digits_to_pil_images()
+        return images, targets, "digits"
+
+
+def prepare_dataset(
+    train_pct: float,
+    val_pct: float,
+    dataset_source: str = "auto",
+    seed: int = 42,
+):
+    if train_pct <= 0 or val_pct <= 0:
+        raise ValueError("train_pct and val_pct must both be greater than zero.")
+    if train_pct + val_pct >= 100:
+        raise ValueError("train_pct + val_pct must be less than 100.")
+
+    images, targets, resolved_source = _load_examples(dataset_source)
+    total_size = len(images)
+    print(f"Resolved dataset source: {resolved_source}")
     print(f"Total dataset size: {total_size}")
 
-    # Shuffle and then subset the dataset
-    ds_full = ds_full.shuffle(seed=42)
-    num_train = int((train_pct / 100) * total_size)
-    num_val = int((val_pct / 100) * total_size)
+    rng = np.random.default_rng(seed)
+    indices = rng.permutation(total_size)
 
-    ds_train = ds_full.select(range(num_train))
-    ds_val = ds_full.select(range(num_train, num_train + num_val))
+    num_train = max(1, int((train_pct / 100.0) * total_size))
+    num_val = max(1, int((val_pct / 100.0) * total_size))
 
-    ds_unlabel = ds_full.select(range(num_train + num_val, total_size))
+    train_idx = indices[:num_train]
+    val_idx = indices[num_train : num_train + num_val]
+    unlabel_idx = indices[num_train + num_val :]
 
-    print(f"Using {len(ds_train)} samples for training, {len(ds_val)} samples for validation and {len(ds_unlabel)} samples for unsupervised learning")
-    
-    return ds_train, ds_val, ds_unlabel
+    train_images = [images[idx] for idx in train_idx]
+    val_images = [images[idx] for idx in val_idx]
+    unlabel_images = [images[idx] for idx in unlabel_idx]
+    train_targets = targets[train_idx]
+    val_targets = targets[val_idx]
 
-def get_transforms(train=True):
-    """Returns two types of transforms: basic and augmented"""
-    basic_transform = transforms.Compose([
-        #transforms.Resize((224, 224)),
-        transforms.RandomResizedCrop(224, scale=(0.8, 1.0)),
-        transforms.RandomHorizontalFlip(),
-        transforms.ColorJitter(0.4, 0.4, 0.4, 0.1),
-        transforms.RandomGrayscale(p=0.2),
-        
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                           std=[0.229, 0.224, 0.225])
-    ])
-    
-    if train:
-        augment_transform = transforms.Compose([
-            transforms.RandomResizedCrop(224, scale=(0.8, 1.0)),
-            transforms.RandomHorizontalFlip(),
-            transforms.ColorJitter(0.4, 0.4, 0.4, 0.1),
-            transforms.RandomGrayscale(p=0.2),
-            
+    print(
+        "Using "
+        f"{len(train_images)} labeled train, "
+        f"{len(val_images)} validation, and "
+        f"{len(unlabel_images)} unlabeled samples"
+    )
+
+    return (train_images, train_targets), (val_images, val_targets), unlabel_images
+
+
+def get_transforms(train: bool = True):
+    normalize = transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+    eval_transform = transforms.Compose(
+        [
+            transforms.Resize((IMAGE_SIZE, IMAGE_SIZE)),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                               std=[0.229, 0.224, 0.225])
-        ])
-        return basic_transform, augment_transform
-    return basic_transform, None
+            normalize,
+        ]
+    )
 
+    if not train:
+        return eval_transform, None
 
-def transform_supervised(example, transform):
-    # Apply the transformation to the image
-    original_images = example["image"]
-    images = [transform(img) for img in example["image"]]
-    # Stack the transformed images into a batch tensor
-    images = torch.stack(images)
-    # Convert age to a float tensor (vector of size 1) for regression tasks
-    ages = torch.tensor(example["age"],dtype=torch.float32).unsqueeze(1)
-    return {"image": images, "age": ages, "original_image": original_images}
-
+    train_transform = transforms.Compose(
+        [
+            transforms.Resize((IMAGE_SIZE, IMAGE_SIZE)),
+            transforms.RandomAffine(degrees=12, translate=(0.05, 0.05), scale=(0.9, 1.1)),
+            transforms.ToTensor(),
+            normalize,
+        ]
+    )
+    augment_transform = transforms.Compose(
+        [
+            transforms.Resize((IMAGE_SIZE, IMAGE_SIZE)),
+            transforms.RandomAffine(degrees=18, translate=(0.08, 0.08), scale=(0.85, 1.15)),
+            transforms.ToTensor(),
+            normalize,
+        ]
+    )
+    return train_transform, augment_transform
 
 
 def collate_supervised(batch):
-    """
-    Collate function for supervised data that handles both transformed and original images
-    """
-    collated = {
+    return {
         "image": torch.stack([item["image"] for item in batch]),
-        "original_image": [sample["original_image"] for sample in batch],
-        "age": torch.stack([item["age"] for item in batch])
+        "original_image": [item["original_image"] for item in batch],
+        "age": torch.stack([item["age"] for item in batch]),
     }
-    return collated
+
 
 def collate_unsupervised(batch):
-    """
-    Collate function for unsupervised data that preserves original images
-    """
-    collated = {
-        "image": [sample["image"] for sample in batch]
-    }
-    return collated
+    return {"image": [sample["image"] for sample in batch]}
 
 
+def create_dataloaders(ds_train, ds_val, ds_unlabel, batch_size: int):
+    train_images, train_targets = ds_train
+    val_images, val_targets = ds_val
 
-def create_dataloaders(ds_train, ds_val, ds_unlabel, batch_size):
-    # Get transformations (could later inject augmentation for training)
     transform_train, augment_transform = get_transforms(train=True)
     transform_val, _ = get_transforms(train=False)
 
-    ds_train = ds_train.with_transform(lambda x: transform_supervised(x, transform_train))
-    ds_val = ds_val.with_transform(lambda x: transform_supervised(x, transform_val))
+    train_dataset = SupervisedImageRegressionDataset(train_images, train_targets, transform_train)
+    val_dataset = SupervisedImageRegressionDataset(val_images, val_targets, transform_val)
+    unlabel_dataset = UnsupervisedImageDataset(ds_unlabel)
 
+    drop_last_train = len(train_dataset) >= batch_size
+    drop_last_unlabel = len(unlabel_dataset) >= batch_size
 
-    train_loader = DataLoader(ds_train, batch_size=batch_size, shuffle=True, drop_last=True, collate_fn=collate_supervised)
-    unlabel_loader = DataLoader(ds_unlabel, batch_size=batch_size, shuffle=True, drop_last=True, collate_fn=collate_unsupervised)
-    val_loader = DataLoader(ds_val, batch_size=batch_size, shuffle=False,collate_fn=collate_supervised)
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        drop_last=drop_last_train,
+        collate_fn=collate_supervised,
+    )
+    unlabel_loader = DataLoader(
+        unlabel_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        drop_last=drop_last_unlabel,
+        collate_fn=collate_unsupervised,
+    )
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        collate_fn=collate_supervised,
+    )
 
     return train_loader, unlabel_loader, val_loader, augment_transform

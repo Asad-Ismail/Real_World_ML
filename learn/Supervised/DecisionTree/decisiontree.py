@@ -1,10 +1,15 @@
-import pandas as pd
-import numpy as np
+from pathlib import Path
 import sys
+
 import matplotlib.pyplot as plt
-from scipy import stats
-sys.path.append("../utils")
-from utils import plot_decision_boundary
+import numpy as np
+
+CURRENT_DIR = Path(__file__).resolve().parent
+UTILS_DIR = CURRENT_DIR.parent / "utils"
+if str(UTILS_DIR) not in sys.path:
+    sys.path.insert(0, str(UTILS_DIR))
+
+from utils import ensure_directory, plot_decision_boundary
 
 def get_data():
     from sklearn.datasets import make_blobs
@@ -20,6 +25,10 @@ class Node:
         self.left_subtree = left_subtree    # left subtree (if internal node)
         self.right_subtree = right_subtree  # right subtree (if internal node)
 
+    @property
+    def is_leaf(self):
+        return self.value is not None
+
 class DecisionTree:
     def __init__(self, max_depth=None):
         self.max_depth = max_depth
@@ -27,33 +36,43 @@ class DecisionTree:
     def fit(self, X, y):
         self.n_classes = len(set(y))
         self.n_features = X.shape[1]
+        self.default_label_ = self._most_common_label(y)
         self.tree = self._grow_tree(X, y)
+        return self
 
     def predict(self, X):
         predictions = []
         for sample in X:
             node = self.tree
-            while node.left_subtree:
+            while not node.is_leaf:
                 if sample[node.feature] <= node.threshold:
                     node = node.left_subtree
                 else:
                     node = node.right_subtree
-            predictions.append(node.value)
+            predictions.append(node.value if node.value is not None else self.default_label_)
         return np.array(predictions)
         
     def _grow_tree(self, X, y, depth=0):
         n_samples, n_features = X.shape
         n_labels = len(set(y))
+
+        if n_samples == 0:
+            return Node(value=self.default_label_)
         
         # Stopping conditions
-        if (self.max_depth is not None and depth >= self.max_depth) or n_labels == 1:
+        if (self.max_depth is not None and depth >= self.max_depth) or n_labels == 1 or n_samples < 2:
             # Leaf node
             return Node(value=self._most_common_label(y))
         
         # Splitting the node
-        feature_indices = np.random.choice(n_features, self.n_features, replace=False)
+        feature_indices = np.arange(n_features)
         best_feature, best_threshold = self._best_split(X, y, feature_indices)
+        if best_feature is None:
+            return Node(value=self._most_common_label(y))
+
         left_indices, right_indices = self._split(X[:, best_feature], best_threshold)
+        if len(left_indices) == 0 or len(right_indices) == 0:
+            return Node(value=self._most_common_label(y))
         
         # Grow subtrees
         left_subtree = self._grow_tree(X[left_indices, :], y[left_indices], depth+1)
@@ -84,8 +103,8 @@ class DecisionTree:
 
     
     def _most_common_label(self,y):
-         m = stats.mode(y)[0][0]
-         return m
+        values, counts = np.unique(y, return_counts=True)
+        return values[np.argmax(counts)]
 
     
     def _information_gain(self, y, feature_values, threshold):
@@ -108,7 +127,7 @@ class DecisionTree:
         n = len(y)
         if n == 0:
             return 0
-        counts = np.bincount(y)
+        _, counts = np.unique(y, return_counts=True)
         probabilities = counts / n
         entropy = -np.sum([p * np.log2(p) for p in probabilities if p > 0])
         return entropy
@@ -117,12 +136,16 @@ class DecisionTree:
 if __name__=="__main__":
     X,Y=get_data()
     print(f"Y min and max are {Y.min()},{Y.max()}")
+    results_dir = ensure_directory(CURRENT_DIR / "results")
+
     plt.scatter(X[:, 0], X[:, 1], c=Y)
-    plt.savefig('results/data.png')
+    plt.savefig(results_dir / "data.png")
+    plt.close()
+
     dt=DecisionTree(max_depth=10)
     print(f"Fitting Training data to Decision Tree")
     dt.fit(X, Y)
-    plot_decision_boundary(dt, X, Y,save_path="results/decisiontree.png")
+    plot_decision_boundary(dt, X, Y, save_path=results_dir / "decisiontree.png")
     y_pred = dt.predict(X)
     accuracy = np.sum(y_pred == Y) / len(Y)
     print(f"Decision Tree Accuracy: {accuracy}")

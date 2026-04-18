@@ -10,4 +10,15 @@ Autoencoders, on the other hand, are neural networks that are trained to learn a
 
 While autoencoders can be seen as a nonlinear generalization of PCA, they are more powerful than PCA because they can learn more complex, nonlinear relationships in the data. Autoencoders can also be used for a variety of other tasks, such as image generation, data denoising, and anomaly detection.
 
-Using only ~8 % pf parameters we can get the quite good reconstruction of original image for mnist data
+Using only a small latent representation, we can still recover a useful reconstruction of the original image.
+
+## Run It
+
+```bash
+python learn/Unsupervised/autoencoder/autoencoder.py
+```
+
+The current example uses the small built-in digits dataset and saves:
+
+- `learn/Unsupervised/autoencoder/results/recons.png`
+- `learn/Unsupervised/autoencoder/results/loss.png`

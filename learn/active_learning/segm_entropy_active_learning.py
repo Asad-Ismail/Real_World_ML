@@ -1,38 +1,49 @@
-import torch
 import numpy as np
-import random
 
-# Mock datasets replace with your dataset
-unlabeled_dataset = list(range(10))
+
+def softmax(logits, axis=0):
+    shifted = logits - np.max(logits, axis=axis, keepdims=True)
+    exp_logits = np.exp(shifted)
+    return exp_logits / np.sum(exp_logits, axis=axis, keepdims=True)
 
 
 class SegmentationModel:
-    def __init__(self):
-        pass
-    def parameters(self):
-        return [torch.nn.Parameter(torch.randn(2, 2))]
-    
-    def __call__(self, img):
-        # each mask has shape (N,C,h,w) N is size of batch
-        segm = {'confidence':torch.randn(1,21,24,24)}
-        return segm
+    def __init__(self, seed=42, n_classes=3, height=16, width=16):
+        self.seed = seed
+        self.n_classes = n_classes
+        self.height = height
+        self.width = width
 
-# Initialize
-model = SegmentationModel()
-
-# Get detection scores for unlabelled dataset
-uncertainties = []
-for img in unlabeled_dataset:
-    segms = model(img)
-    probs = torch.nn.functional.softmax(segms['confidence'],dim=1).max(dim=1)[0]
-    entropies = -torch.sum(probs * torch.log(1e-9+probs), dim=[0,1,2]) 
-    uncertainties.append(entropies.item())
+    def predict_logits(self, image_id):
+        rng = np.random.default_rng(self.seed + image_id)
+        return rng.normal(size=(self.n_classes, self.height, self.width))
 
 
-# Active learning loop
-n_queries = 5
-selected_indices=np.argsort(uncertainties)[::-1][:min(len(uncertainties),n_queries)]
-print(f'Images to labels are {selected_indices}')
-## Save most uncertain images and label them
-    
-print("Active learning completed!")
+def segmentation_entropy_uncertainty(logits):
+    probabilities = softmax(logits, axis=0)
+    pixel_entropy = -np.sum(probabilities * np.log(probabilities + 1e-8), axis=0)
+    return float(np.mean(pixel_entropy))
+
+
+def rank_unlabeled_examples(unlabeled_dataset, model, n_queries=5):
+    scored_examples = []
+
+    for image_id in unlabeled_dataset:
+        logits = model.predict_logits(image_id)
+        uncertainty = segmentation_entropy_uncertainty(logits)
+        scored_examples.append({"image_id": image_id, "uncertainty": uncertainty})
+
+    scored_examples.sort(key=lambda item: item["uncertainty"], reverse=True)
+    return scored_examples[:n_queries], scored_examples
+
+
+if __name__ == "__main__":
+    unlabeled_dataset = list(range(20))
+    model = SegmentationModel(seed=42)
+    selected_examples, _ = rank_unlabeled_examples(unlabeled_dataset, model, n_queries=5)
+
+    print("Images to label next based on entropy:")
+    for example in selected_examples:
+        print(f"image_id={example['image_id']}, uncertainty={example['uncertainty']:.4f}")
+
+    print("Active learning completed!")

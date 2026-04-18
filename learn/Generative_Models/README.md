@@ -1,5 +1,7 @@
 ## We will study different kinds of Generative models
 
+This folder mixes concept notes, research-inspired sketches, and runnable toy examples. Some files are intentionally lightweight demonstrations rather than full production implementations.
+
 ## Overview of Generative models
 
 <div align="center">
@@ -141,3 +143,11 @@ PixelCNN models generate images pixel by pixel in an autoregressive manner. To e
 ## Autoregressive Models
 The main advantage of AR models is that it is easy to compute, and optimize, the exact likelihood of each sequence (data vector). The main disadvantage is that generating samples is inherently sequential, which can be slow. In addition, the method does not learn a compact latent representation of the data.
 
+## Verified Lightweight Example
+
+- `python learn/Generative_Models/vq-gan.py`
+- `python learn/Generative_Models/vq-vae.py`
+- `python learn/Generative_Models/multimodal_vae.py`
+- `python learn/Generative_Models/nerf.py`
+
+The `vq-gan.py` file is a compact VQ-GAN-style concept demo built to be runnable with small dependencies. It focuses on the main ideas: latent encoding, vector quantization, reconstruction, and discriminator scoring.

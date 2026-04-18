@@ -1,9 +1,14 @@
 # coding:utf-8
 import numpy as np
 
-from mla.base import BaseEstimator
-from mla.ensemble.base import information_gain, mse_criterion
-from mla.ensemble.tree import Tree
+try:
+    from .basemodel.base import BaseEstimator
+    from .base import information_gain, mse_criterion
+    from .tree import Tree
+except ImportError:
+    from basemodel.base import BaseEstimator
+    from base import information_gain, mse_criterion
+    from tree import Tree
 
 
 class RandomForest(BaseEstimator):
@@ -32,16 +37,23 @@ class RandomForest(BaseEstimator):
     def fit(self, X, y):
         self._setup_input(X, y)
         if self.max_features is None:
-            self.max_features = int(np.sqrt(X.shape[1]))
-        else:
-            assert X.shape[1] > self.max_features
+            self.max_features = max(1, int(np.sqrt(X.shape[1])))
+        elif self.max_features > X.shape[1]:
+            raise ValueError("max_features cannot exceed the number of input features.")
+
         self._train()
+        return self
+
+    def _bootstrap_sample(self):
+        indices = np.random.choice(self.n_samples, size=self.n_samples, replace=True)
+        return self.X[indices], self.y[indices]
 
     def _train(self):
         for tree in self.trees:
+            sample_X, sample_y = self._bootstrap_sample()
             tree.train(
-                self.X,
-                self.y,
+                sample_X,
+                sample_y,
                 max_features=self.max_features,
                 min_samples_split=self.min_samples_split,
                 max_depth=self.max_depth
@@ -70,18 +82,35 @@ class RandomForestClassifier(RandomForest):
         for _ in range(self.n_estimators):
             self.trees.append(Tree(criterion=self.criterion))
 
-    def _predict(self, X=None):
-        y_shape = np.unique(self.y).shape[0]
-        predictions = np.zeros((X.shape[0], y_shape))
+    def fit(self, X, y):
+        self.classes_, encoded_y = np.unique(y, return_inverse=True)
+        return super(RandomForestClassifier, self).fit(X, encoded_y)
+
+    def predict_proba(self, X=None):
+        if not isinstance(X, np.ndarray):
+            X = np.array(X)
+
+        if self.X is None:
+            raise ValueError("You must call `fit` before `predict_proba`")
+
+        return self._predict_proba(X)
+
+    def _predict_proba(self, X=None):
+        n_classes = len(self.classes_)
+        predictions = np.zeros((X.shape[0], n_classes))
 
         for i in range(X.shape[0]):
-            row_pred = np.zeros(y_shape)
+            row_pred = np.zeros(n_classes)
             for tree in self.trees:
                 row_pred += tree.predict_row(X[i, :])
 
             row_pred /= self.n_estimators
             predictions[i, :] = row_pred
         return predictions
+
+    def _predict(self, X=None):
+        probabilities = self._predict_proba(X)
+        return self.classes_[np.argmax(probabilities, axis=1)]
 
 
 class RandomForestRegressor(RandomForest):

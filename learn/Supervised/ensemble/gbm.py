@@ -1,11 +1,14 @@
 # coding:utf-8
 import numpy as np
-# logistic function
-from scipy.special import expit
 
-from basemodel import BaseEstimator
-from base import mse_criterion
-from tree import Tree
+try:
+    from .basemodel.base import BaseEstimator
+    from .base import mse_criterion
+    from .tree import Tree
+except ImportError:
+    from basemodel.base import BaseEstimator
+    from base import mse_criterion
+    from tree import Tree
 
 """
 References:
@@ -14,6 +17,11 @@ http://www.saedsayad.com/docs/xgboost.pdf
 https://homes.cs.washington.edu/~tqchen/pdf/BoostedTree.pdf
 http://stats.stackexchange.com/questions/202858/loss-function-approximation-with-taylor-expansion
 """
+
+
+def sigmoid(x):
+    x = np.clip(x, -500, 500)
+    return 1.0 / (1.0 + np.exp(-x))
 
 
 class Loss:
@@ -59,15 +67,15 @@ class LogisticLoss(Loss):
     """Logistic loss."""
 
     def grad(self, actual, predicted):
-        return actual * expit(-actual * predicted)
+        return actual * sigmoid(-actual * predicted)
 
     def hess(self, actual, predicted):
-        expits = expit(predicted)
+        expits = sigmoid(predicted)
         return expits * (1 - expits)
 
     def transform(self, output):
         # Apply logistic (sigmoid) function to the output
-        return expit(output)
+        return sigmoid(output)
 
 
 class GradientBoosting(BaseEstimator):

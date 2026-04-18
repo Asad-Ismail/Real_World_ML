@@ -1,18 +1,29 @@
-import numpy as np
-from tqdm import tqdm
+from pathlib import Path
+
 import matplotlib.pyplot as plt
+import numpy as np
+
+try:
+    from tqdm import tqdm
+except ImportError:
+    def tqdm(iterable, *args, **kwargs):
+        return iterable
 
 EPSILON = 1e-12
 
+CURRENT_DIR = Path(__file__).resolve().parent
+RESULTS_DIR = CURRENT_DIR / "results"
+
+
+def ensure_results_dir():
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    return RESULTS_DIR
+
 def get_data():
-    # only to get sample dataset
-    import mnist   
-    train_imgs=mnist.train_images()
-    test_imgs= mnist.test_images()
-    train_lbls=mnist.train_labels()
-    test_lbls= mnist.test_labels()
-    #print(f"Train and test shape are {train_imgs.shape},{test_imgs.shape}")
-    return train_imgs,train_lbls,test_imgs,test_lbls
+    from sklearn.datasets import load_digits
+
+    data, labels = load_digits(return_X_y=True)
+    return data, labels
 
 
 def squared_dist_mat(X):
@@ -205,31 +216,26 @@ def tsne(
         Q = low_dim_affinities(Y, Y_dist_mat)
         Q = np.clip(Q, EPSILON, None)
         grad = compute_grad(P, Q, Y, Y_dist_mat)
+        previous_Y = Y.copy()
         Y = Y - lr * grad + momentum_fn(t) * (Y - Y_old)
-        Y_old = Y.copy()
-        Y_old = Y.copy()
+        Y_old = previous_Y
         if t == 100:
             P = P / early_exaggeration
-            pass
-        pass
 
     return Y
 
 if __name__=="__main__":
-    #train_imgs,train_lbls,test_imgs,test_lbls=get_data()
-    #print(train_imgs.shape)
-    #get first n 
-    #train_imgs=train_imgs[:2000,...].reshape(-1,784)
-    #train_lbls=train_lbls[:2000,...]
-    #print(f"Data min and max before normalization is {train_imgs.min()},{train_imgs.max()}")
-    ##train_imgs=normalize_data(train_imgs)
-    #print(f"Data min and max after normalization is {train_imgs.min()},{train_imgs.max()}")
-    from sklearn.datasets import load_digits
-    train_imgs, train_lbls = load_digits(return_X_y=True)
+    ensure_results_dir()
+    train_imgs, train_lbls = get_data()
+    train_imgs = train_imgs[:600]
+    train_lbls = train_lbls[:600]
     unique_values, unique_counts = np.unique(train_lbls, return_counts=True)
     for value, count in zip(unique_values, unique_counts):
         print(f"Label {value} has count: {count}")
-    y=tsne(train_imgs, 2, 30, 1000, lr=100, momentum_fn=momentum_func,pbar=True,random_state=42)
-    np.save("results/tsne.np",y)
-    plt.scatter(y[:,0], y[:,1],c=train_lbls)
-    plt.savefig("results/clusters.png")
+    y = tsne(train_imgs, 2, 30, 400, lr=100, momentum_fn=momentum_func, pbar=True, random_state=42)
+    np.save(RESULTS_DIR / "tsne.npy", y)
+    plt.figure(figsize=(8, 6))
+    plt.scatter(y[:, 0], y[:, 1], c=train_lbls, cmap="tab10", s=10)
+    plt.title("t-SNE Clusters on Digits")
+    plt.savefig(RESULTS_DIR / "clusters.png", bbox_inches="tight")
+    plt.close()

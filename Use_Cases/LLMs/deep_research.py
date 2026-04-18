@@ -1,4 +1,5 @@
 import dspy
+import argparse
 import os
 from tavily import TavilyClient
 from dotenv import load_dotenv
@@ -8,6 +9,18 @@ from typing import List
 # ... (The TavilySearch, GenerateSearchQueries, SynthesizeAndAnswer, and GenerateFinalReport classes are perfect as they are) ...
 # Load environment variables from .env file
 load_dotenv()
+
+
+def configure_lm() -> None:
+    api_key = os.getenv("OPENROUTER_API_KEY")
+    if not api_key:
+        raise EnvironmentError("Set OPENROUTER_API_KEY before running this example.")
+    lm = dspy.LM(
+        "openrouter/moonshotai/kimi-k2:free",
+        api_key=api_key,
+        api_base="https://openrouter.ai/api/v1",
+    )
+    dspy.configure(lm=lm)
 
 def check_llm_connection():
     """
@@ -38,12 +51,6 @@ def check_llm_connection():
         print(f"❌ LLM Connection Failed.")
         print(f"   Error details: {e}")
         return False
-
-# Configure the LLM
-lm = dspy.LM("openrouter/moonshotai/kimi-k2:free", api_key=os.getenv("OPENROUTER_API_KEY"), api_base="https://openrouter.ai/api/v1")
-dspy.configure(lm=lm)
-if not check_llm_connection():
-    exit() # Exit if the LLM is not working
 
 class TavilySearch(dspy.Retrieve):
     def __init__(self, k=3, api_key=None):
@@ -133,14 +140,30 @@ class DeepResearchAgent(dspy.Module):
         final_report = self.reporter(research_topic=research_topic, qa_pairs=formatted_qa)
         
         return dspy.Prediction(report=final_report.report)
-    
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run the DSPy + Tavily deep-research example.")
+    parser.add_argument(
+        "--research-topic",
+        type=str,
+        default="The psychological effects of striving for constant happiness.",
+    )
+    parser.add_argument("--search-k", type=int, default=3, help="Number of Tavily results per search query.")
+    return parser.parse_args()
 
-tavily_retriever = TavilySearch(k=3)
 
-research_agent = DeepResearchAgent(retriever=tavily_retriever)
+def main() -> None:
+    args = parse_args()
+    configure_lm()
+    if not check_llm_connection():
+        raise SystemExit(1)
 
-research_topic = "The psychological effects of striving for constant happiness."
-result = research_agent(research_topic=research_topic)
+    tavily_retriever = TavilySearch(k=args.search_k)
+    research_agent = DeepResearchAgent(retriever=tavily_retriever)
+    result = research_agent(research_topic=args.research_topic)
 
-print("\n\n--- FINAL REPORT ---")
-print(result.report)
+    print("\n\n--- FINAL REPORT ---")
+    print(result.report)
+
+
+if __name__ == "__main__":
+    main()

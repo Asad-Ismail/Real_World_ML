@@ -4,8 +4,8 @@ import numpy as np
 import pytest
 from numpy.testing import assert_almost_equal
 
-from mla.metrics.base import check_data, validate_input
-from mla.metrics.metrics import get_metric
+from ..base import check_data, validate_input
+from ..metrics import get_metric
 
 
 def test_data_validation():

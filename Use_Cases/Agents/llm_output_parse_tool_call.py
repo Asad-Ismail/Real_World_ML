@@ -1,53 +1,54 @@
-from pydantic import BaseModel
-from openai import OpenAI
-import json
 import os
+
 from dotenv import load_dotenv
+from openai import OpenAI
+from pydantic import BaseModel
 
-load_dotenv()
 
-token = os.getenv("MGA_API_KEY")
-client = OpenAI(base_url="https://chat.int.bayer.com/api/v2", api_key=token)
-model = 'o4-mini'
+MODEL_NAME = "o4-mini"
+
 
 class UserDetails(BaseModel):
     name: str
     age: int
 
 
+def build_client() -> OpenAI:
+    load_dotenv()
+    token = os.getenv("MGA_API_KEY")
+    if not token:
+        raise EnvironmentError("Set MGA_API_KEY before running this example.")
+    return OpenAI(base_url="https://chat.int.bayer.com/api/v2", api_key=token)
 
-pydantic_schema = UserDetails.model_json_schema()
 
-
-response = client.chat.completions.create(
-    model=model,
-    messages=[
-        {"role": "user", "content": "Extract: Jason is 25 years old."}
-    ],
-    tools=[
-        {
-            "type": "function",
-            "function": {
-                "name": "extract_user_info",
-                "description": "Extracts name and age from text.",
-                "parameters": pydantic_schema
+def extract_with_tool_call(text: str) -> UserDetails:
+    client = build_client()
+    response = client.chat.completions.create(
+        model=MODEL_NAME,
+        messages=[{"role": "user", "content": f"Extract user information from: {text}"}],
+        tools=[
+            {
+                "type": "function",
+                "function": {
+                    "name": "extract_user_info",
+                    "description": "Extracts name and age from text.",
+                    "parameters": UserDetails.model_json_schema(),
+                },
             }
-        }
-    ],
-    #tool_choice="none"
-    tool_choice={
-        "type": "function",
-        "function": {"name": "extract_user_info"}
-    }
-)
+        ],
+        tool_choice={
+            "type": "function",
+            "function": {"name": "extract_user_info"},
+        },
+    )
+    tool_call = response.choices[0].message.tool_calls[0]
+    return UserDetails.model_validate_json(tool_call.function.arguments)
 
-print(response.choices[0])
-tool_call = response.choices[0].message.tool_calls[0]
-json_string_arguments = tool_call.function.arguments
-print(json_string_arguments)
 
-print(f"LLM returned this string: {json_string_arguments}")
+def main() -> None:
+    user_details = extract_with_tool_call("Jason is 25 years old.")
+    print(user_details.model_dump_json(indent=2))
 
-user_details = UserDetails.model_validate_json(json_string_arguments)
 
-assert isinstance(user_details, UserDetails)
+if __name__ == "__main__":
+    main()

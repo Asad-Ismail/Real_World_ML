@@ -1,33 +1,43 @@
-## PCA (Princial Componenet Analysis)
+# PCA From First Principles
 
-PCA (Principal Component Analysis) is a technique used to reduce the dimensionality of data while retaining as much information as possible. The forward and reverse steps of PCA can be expressed mathematically as follows:
+PCA reduces dimensionality by finding orthogonal directions that capture the most variance in the data.
 
-Forward Step:
-Data centering: Subtract the mean of each variable from the corresponding values to obtain centered data.
+## Core Steps
 
-X_centered = X - X̄
+1. Center the data:
+   `X_centered = X - mean(X)`
+2. Compute the covariance matrix:
+   `C = cov(X_centered)`
+3. Find eigenvalues and eigenvectors of `C`
+4. Keep the top `k` eigenvectors
+5. Project the data onto those directions:
+   `Z = X_centered @ V_k`
+6. Reconstruct approximately:
+   `X_reconstructed = Z @ V_k.T + mean(X)`
 
-Compute the covariance matrix: Calculate the covariance matrix of the centered data. The covariance matrix measures how much two variables vary together.
+## What This Script Teaches
 
-C = (1 / (n-1)) X_centered.T @ X_centered
+- Why centering matters
+- How covariance captures correlated variation
+- Why eigenvectors define principal directions
+- How reconstruction quality changes as you keep more components
 
-Compute eigenvectors and eigenvalues of the covariance matrix: Find the eigenvectors and eigenvalues of the covariance matrix. Eigenvectors represent the directions in which the data varies the most, and eigenvalues represent the amount of variance explained by each eigenvector.
+## Run It
 
-C @ v_i = λ_i v_i
+```bash
+python learn/Unsupervised/pca/pca.py
+```
 
-Select the principal components: Choose the top k eigenvectors with the largest eigenvalues. These eigenvectors represent the principal components of the data.
+The script uses the built-in scikit-learn digits dataset, so it does not require an extra `mnist` package.
 
-V_k = [v_1, v_2, ..., v_k]
+It will save:
 
-Transform the data: Project the centered data onto the k principal components to obtain the transformed data.
+- `learn/Unsupervised/pca/results/recons.png`
+- `learn/Unsupervised/pca/results/variance.png`
 
-Y = X_centered @ V_k
+## Questions To Answer Yourself
 
-Reverse Step:
-Compute the inverse transformation: Multiply the transformed data by the transpose of the principal component matrix to obtain the reconstructed data.
-
-X_reconstructed = Y @ V_k.T
-
-Add back the mean: Add the mean of each variable back to the reconstructed data to obtain the final reconstructed data.
-
-X_final = X_reconstructed + X̄
+- Why does PCA need centered data?
+- Why are the principal directions orthogonal?
+- What information is lost when reconstruction is imperfect?
+- When would PCA fail to capture useful structure?

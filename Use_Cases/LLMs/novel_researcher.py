@@ -1,16 +1,24 @@
 import dspy
+import argparse
 import os
 from dotenv import load_dotenv
 from typing import List
 from datetime import datetime
+import json
 
 # Load environment variables from .env file
 load_dotenv()
 
-# Configure the LLM
-# Make sure your LM is configured correctly
-lm = dspy.LM("openrouter/moonshotai/kimi-k2:free", api_key=os.getenv("OPENROUTER_API_KEY"), api_base="https://openrouter.ai/api/v1")
-dspy.configure(lm=lm)
+def configure_lm() -> None:
+    api_key = os.getenv("OPENROUTER_API_KEY")
+    if not api_key:
+        raise EnvironmentError("Set OPENROUTER_API_KEY before running this example.")
+    lm = dspy.LM(
+        "openrouter/moonshotai/kimi-k2:free",
+        api_key=api_key,
+        api_base="https://openrouter.ai/api/v1",
+    )
+    dspy.configure(lm=lm)
 
 # This signature is fine, no changes needed
 class GenerateProblemAndContext(dspy.Signature):
@@ -22,7 +30,7 @@ class GenerateProblemAndContext(dspy.Signature):
 
 # THIS IS THE UPDATED SIGNATURE
 class GenerateResearchIdea(dspy.Signature):
-    """
+    r"""
     # TASK GOAL
     Describe the landmark, historically significant solution to the given research problem. The solution should be a well-known, foundational concept or paper that is widely recognized for having effectively addressed the challenge.
 
@@ -105,16 +113,31 @@ class ResearchPipeline(dspy.Module):
         )
 
 
-research_pipeline = ResearchPipeline()
-topic = "Vanishing gradient problem in very deep networks"
-final_output = research_pipeline(research_topic=topic)
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run the landmark-solution DSPy example.")
+    parser.add_argument(
+        "--topic",
+        type=str,
+        default="Vanishing gradient problem in very deep networks",
+        help="High-level research topic to analyze.",
+    )
+    return parser.parse_args()
 
-output_data = {
-    "research_topic": final_output.research_topic,
-    "problem_statement": final_output.problem_statement,
-    "context": final_output.context,
-    "landmark_solution": final_output.landmark_solution
-}
 
-import json
-print(json.dumps(output_data, indent=4))
+def main() -> None:
+    args = parse_args()
+    configure_lm()
+    research_pipeline = ResearchPipeline()
+    final_output = research_pipeline(research_topic=args.topic)
+
+    output_data = {
+        "research_topic": final_output.research_topic,
+        "problem_statement": final_output.problem_statement,
+        "context": final_output.context,
+        "landmark_solution": final_output.landmark_solution,
+    }
+    print(json.dumps(output_data, indent=4))
+
+
+if __name__ == "__main__":
+    main()

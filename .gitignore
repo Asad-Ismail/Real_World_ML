@@ -23,3 +23,9 @@ CLAUDE.md
 # Project-specific directories
 Use_Cases/LLMs/historical_ai_landmarks/**
 **/anomaly/data/
+Use_Cases/SparkImageProcessing/input_images/
+Use_Cases/SparkImageProcessing/opencv_gray_output/
+Use_Cases/learning_with_less/results/
+Use_Cases/RealTimeDataProcessing/stream_checkpoints/
+learn/Unsupervised/t-SNE/results/tsne.npy
+learn/Unsupervised/t-SNE/results/tsne_wrapper.npy
